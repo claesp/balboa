@@ -1,0 +1,9 @@
+{
+  "hostname": "rocky.example.test",
+  "username": "operator",
+  "password_hash": "REPLACE_WITH_A_SHA512_CRYPT_HASH",
+  "ssh_public_key": "REPLACE_WITH_AN_ED25519_PUBLIC_KEY",
+  "timezone": "Europe/Stockholm",
+  "keyboard": "us",
+  "language": "en_US.UTF-8"
+}

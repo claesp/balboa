@@ -1,0 +1,14 @@
+[Unit]
+Description=Apply the Balboa security profile
+Wants=network-online.target
+After=network-online.target
+ConditionPathExists=!/var/lib/balboa/remediated
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/libexec/balboa/harden.sh
+TimeoutStartSec=90min
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

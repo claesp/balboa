@@ -1,0 +1,14 @@
+[Unit]
+Description=Assess the Balboa security profile after restart
+After=network-online.target
+ConditionPathExists=/var/lib/balboa/remediated
+ConditionPathExists=!/var/lib/balboa/assessed
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/libexec/balboa/audit.sh
+TimeoutStartSec=90min
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,118 @@
+# Tests
+
+Podman tests the installation syntax and packaged security content.
+QEMU tests the installer, kernel, storage, and installed services.
+A container does not supply evidence of full system conformance.
+
+## Local tests
+
+Operate this command on the Linux build host.
+The tests require Python 3.11 or later.
+The tests do not require network access or administrator privileges.
+
+```sh
+make test
+```
+
+The tests reject unsafe site values and disk selections.
+They reject empty, ambiguous, and unresolved security reports.
+They also reject unsafe files in guest evidence archives.
+
+## Podman tests
+
+Prepare the tool container with the procedure in [Build and installation](build.md).
+The lab command creates disposable credentials for all three flavors.
+The command requires empty flavor directories under `build/`.
+
+```sh
+make lab
+make validate
+```
+
+The tests use `ksvalidator -v RHEL10`.
+They require the Rocky datastream and both CIS Level 2 profile titles.
+They also do syntax tests of the guest shell scripts.
+
+The parser does not assess package availability or installation behavior.
+A successful parser result does not prove a successful installation.
+Use QEMU for those tests.
+
+## QEMU installation
+
+Use disposable lab images only for this automated procedure.
+Lab media contains disk passphrases and disposable account credentials.
+Do not install lab media on production hardware.
+
+The example uses the server flavor and BIOS firmware.
+The ISO command inspects the embedded Kickstart and both optical boot entries.
+The QEMU command creates a new 80 GiB virtual disk.
+
+```sh
+python3 -m balboa iso build/server/installation.ks --output build/balboa-server-lab.iso
+python3 -m balboa vm --iso build/balboa-server-lab.iso --workdir build/vm-server-bios --phase install
+```
+
+The virtual machine has no host disk or shared host directory.
+The network uses QEMU address translation and exposes no inbound host port.
+The serial log remains in the VM directory.
+
+The installer stops through the Kickstart `poweroff` command.
+QEMU exit alone does not prove installation success.
+Examine the serial log before the first system boot.
+
+## QEMU assessment
+
+The first system boot applies the security profile.
+The second system boot assesses the installed system.
+The example unlocks the encrypted virtual disk through the serial console.
+
+```sh
+python3 -m balboa vm --iso build/balboa-server-lab.iso --workdir build/vm-server-bios --phase boot --lab-secrets build/server/lab-secrets.json
+python3 -m balboa vm --iso build/balboa-server-lab.iso --workdir build/vm-server-bios --phase boot --lab-secrets build/server/lab-secrets.json
+```
+
+QEMU stops at each requested restart because the command uses `-no-reboot`.
+An intermediate stop without evidence is not a passing assessment.
+The final boot exports the evidence through a dedicated serial channel.
+
+The host places the reports under `collected/evidence/` in the VM directory.
+The host does another report assessment and requires encrypted storage and enforcing SELinux.
+A failed rule causes the final command to return a nonzero status.
+
+Before release, examine the HTML report and each manual control.
+Do not release an image because the remediation service completed.
+Use [Security policy](security.md) for release conditions.
+
+## Firmware and flavor coverage
+
+For UEFI, add `--firmware uefi` to all three VM commands.
+Use a new VM directory for each firmware and flavor combination.
+The default OVMF paths match common Debian installation paths.
+
+If the host uses different paths, set `--ovmf-code` and `--ovmf-vars`.
+For CPU emulation without KVM, add `--accel tcg`.
+The emulated CPU uses the QEMU `max` model for x86-64-v3 instructions.
+
+Do the installation and assessment for these combinations:
+
+- Server with BIOS and UEFI
+- Workstation with BIOS and UEFI
+- Laptop with BIOS and UEFI
+
+The default VM firmware does not enable Secure Boot.
+Do separate Secure Boot tests with approved OVMF keys or physical firmware.
+Do physical laptop tests before release.
+
+## Production media tests
+
+Production media requires interactive entry of the encryption passphrase.
+Use an isolated virtual machine with a disposable disk for this test.
+Select the same disk name in Kickstart as the virtual machine exposes.
+
+Attach the production ISO through virt-manager or an equivalent QEMU interface.
+Do not attach host block devices or shared host directories.
+Use the graphical console to enter the passphrase and examine installer errors.
+
+After installation, do the two system boots with manual disk unlock.
+Examine the reports through the installed system console.
+Production media does not automatically export reports or stop after assessment.

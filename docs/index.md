@@ -31,6 +31,12 @@ The DVD contains packages for installation without network access.
 Package updates still require network access.
 Balboa retains signature files in `cache/`.
 
+## Project procedures
+
+[Build and installation](build.md) describes production media and source selection.
+[Security policy](security.md) describes the controls and release conditions.
+[Testing](testing.md) describes Podman and QEMU tests.
+
 ## Source references
 
 These references identify upstream behavior.

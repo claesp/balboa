@@ -1,0 +1,148 @@
+"""Operate isolated QEMU machines and collect guest assessment evidence."""
+
+import hashlib
+import json
+import os
+from pathlib import Path
+import selectors
+import shutil
+import subprocess
+import tarfile
+import time
+
+
+def observe(command, log_path, timeout, passphrase):
+    deadline = time.monotonic() + timeout
+    with log_path.open("wb") as log:
+        process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                                   stderr=subprocess.STDOUT)
+        selector = selectors.DefaultSelector()
+        selector.register(process.stdout, selectors.EVENT_READ)
+        recent = b""
+        unlocked = False
+        try:
+            while selector.get_map():
+                if time.monotonic() > deadline:
+                    raise TimeoutError("The VM exceeded its time limit. Examine the serial log.")
+                for key, _ in selector.select(timeout=1):
+                    data = os.read(key.fd, 65536)
+                    if not data:
+                        selector.unregister(key.fileobj)
+                        continue
+                    log.write(data)
+                    log.flush()
+                    recent = (recent + data)[-4096:]
+                    if passphrase and not unlocked and b"passphrase" in recent.lower() and b":" in recent.split(b"passphrase")[-1]:
+                        process.stdin.write((passphrase + "\n").encode())
+                        process.stdin.flush()
+                        unlocked = True
+            rc = process.wait(timeout=max(1, deadline - time.monotonic()))
+            if rc:
+                raise ValueError(f"QEMU exited with status {rc}. Examine {log_path}.")
+        finally:
+            if process.poll() is None:
+                process.terminate()
+                try:
+                    process.wait(timeout=10)
+                except subprocess.TimeoutExpired:
+                    process.kill()
+                    process.wait()
+            selector.close()
+            process.stdin.close()
+            process.stdout.close()
+
+
+def extract_evidence(archive, target):
+    with tarfile.open(archive, "r:gz") as stream:
+        members = stream.getmembers()
+        if len(members) > 100 or sum(m.size for m in members) > 256 * 1024 * 1024:
+            raise ValueError("The guest evidence exceeds the permitted size.")
+        for member in members:
+            path = Path(member.name)
+            if path.is_absolute() or ".." in path.parts or path.parts[0] != "evidence":
+                raise ValueError("The guest evidence contains an unsafe path.")
+            if not member.isfile() and not member.isdir():
+                raise ValueError("The guest evidence contains an unsafe file type.")
+        if target.exists():
+            raise ValueError("The evidence directory exists. Select a new VM directory.")
+        target.mkdir(mode=0o700)
+        # Only ordinary files and directories with constrained paths are accepted.
+        for member in members:
+            destination = target / member.name
+            if member.isdir():
+                destination.mkdir(parents=True, exist_ok=True, mode=0o700)
+            else:
+                destination.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+                with stream.extractfile(member) as source, destination.open("xb") as output:
+                    shutil.copyfileobj(source, output)
+
+
+def vm(args):
+    from .cli import ROOT, run, sha256
+
+    iso = args.iso.resolve()
+    manifest = json.loads(iso.with_suffix(".json").read_text())
+    if sha256(iso) != manifest["iso_sha256"]:
+        raise ValueError("The custom ISO does not match its manifest.")
+    if args.lab_secrets and not manifest["lab"]:
+        raise ValueError("Lab credentials cannot unlock a production installation.")
+    if not manifest["lab"]:
+        raise ValueError("The automated VM command requires disposable lab media. Use the manual procedure for production media.")
+    if args.timeout < 60:
+        raise ValueError("The VM time limit must be at least 60 seconds.")
+    work = args.workdir.resolve()
+    work.mkdir(parents=True, exist_ok=True)
+    work.chmod(0o700)
+    disk = work / "system.qcow2"
+    identity = work / "machine.json"
+    expected = {"iso_sha256": manifest["iso_sha256"], "firmware": args.firmware}
+    if args.phase == "install":
+        if disk.exists() or identity.exists():
+            raise ValueError("The VM disk exists. Select a new VM directory.")
+        run(["qemu-img", "create", "-f", "qcow2", disk, "80G"])
+        identity.write_text(json.dumps(expected) + "\n")
+    elif not disk.is_file() or json.loads(identity.read_text()) != expected:
+        raise ValueError("The VM disk identity does not match the image and firmware.")
+    command = ["qemu-system-x86_64", "-machine", f"q35,accel={args.accel}",
+               "-cpu", "host" if args.accel == "kvm" else "max", "-smp", "4", "-m", "4096",
+               "-drive", f"file={disk},format=qcow2,if=virtio", "-nic", "user,model=virtio-net-pci",
+               "-display", "none", "-serial", "stdio", "-monitor", "none", "-no-reboot",
+               "-device", "virtio-serial-pci"]
+    if args.firmware == "uefi":
+        variables = work / "OVMF_VARS.fd"
+        if args.phase == "install":
+            shutil.copyfile(args.ovmf_vars, variables)
+        command += ["-drive", f"if=pflash,format=raw,unit=0,readonly=on,file={args.ovmf_code.resolve()}",
+                    "-drive", f"if=pflash,format=raw,unit=1,file={variables}"]
+    if args.phase == "install":
+        command += ["-cdrom", str(iso), "-boot", "once=d"]
+    archive = work / "evidence.tar.gz"
+    command += ["-chardev", f"file,id=evidence,path={archive}",
+                "-device", "virtserialport,chardev=evidence,name=org.balboa.evidence"]
+    # QEMU uses commas to separate drive and chardev properties.
+    if any("," in str(p) for p in (iso, work, args.ovmf_code, args.ovmf_vars)):
+        raise ValueError("QEMU paths cannot contain commas.")
+    passphrase = None
+    if args.lab_secrets:
+        passphrase = json.loads(args.lab_secrets.read_text())["passphrase"]
+    log = work / f"{args.phase}-{time.time_ns()}.log"
+    print(f"The VM serial log is {log}.", flush=True)
+    observe(command, log, args.timeout, passphrase)
+    if args.phase == "install":
+        print("The installer stopped. Boot the VM to apply the security profile.")
+        return
+    if not archive.exists() or archive.stat().st_size == 0:
+        print("The VM stopped without assessment evidence. Examine the log before the next boot.")
+        return
+    target = work / "collected"
+    extract_evidence(archive, target)
+    evidence = target / "evidence"
+    run(["python3", ROOT / "guest/result_gate.py", evidence / "assessment.xml",
+         "--profile", manifest["profile"]])
+    if (evidence / "oscap-exit-status").read_text().strip() != "0":
+        raise ValueError("The guest scanner returned an error or findings.")
+    if (evidence / "selinux.txt").read_text().strip() != "Enforcing":
+        raise ValueError("The guest did not enforce SELinux.")
+    if "crypt" not in (evidence / "storage.txt").read_text():
+        raise ValueError("The guest did not report encrypted storage.")
+    print(f"The automated assessment passed. Review the manual controls in {evidence}.")
