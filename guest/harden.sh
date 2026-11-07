@@ -10,7 +10,7 @@ source /usr/local/libexec/balboa/failure.sh
 ds=/usr/share/xml/scap/ssg/content/ssg-rl10-ds.xml
 test -f "$ds"
 oscap info --profiles "$ds" | grep -F "${BASE_PROFILE}:"
-python3 /usr/local/libexec/balboa/native_checks.py > "$out/native-before.json"
+python3 /usr/local/libexec/balboa/native_checks.py --install-keys > "$out/native-before.json"
 rpm -qa | sort > "$out/packages.txt"
 sha256sum "$ds" > "$out/datastream.sha256"
 cp /etc/balboa/image.conf "$out/image.conf"

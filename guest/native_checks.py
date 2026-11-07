@@ -6,6 +6,7 @@ from pathlib import Path
 import subprocess
 import sys
 import re
+import argparse
 
 
 def fingerprints(data):
@@ -23,10 +24,15 @@ def validate_fingerprints(observed, policy):
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--install-keys", action="store_true")
+    args = parser.parse_args()
     policy = json.loads(Path("/etc/balboa/native-policy.json").read_text())
     key = Path("/etc/pki/rpm-gpg/RPM-GPG-KEY-Rocky-10")
     file_keys = fingerprints(key.read_text())
     validate_fingerprints(file_keys, policy)
+    if args.install_keys:
+        subprocess.run(["rpm", "--import", str(key)], check=True, capture_output=True, text=True)
     text = subprocess.run(["rpm", "-q", "--qf", "%{DESCRIPTION}\n", "gpg-pubkey"],
                           check=True, capture_output=True, text=True).stdout
     rpm_keys = fingerprints(text)

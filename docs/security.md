@@ -32,6 +32,7 @@ That assessment requires the pinned Rocky fingerprint in both the key file and R
 Sequoia reads the key formats that Rocky Linux 10.2 supplies.
 The source lock also lists the permitted fingerprints for the distribution key bundle.
 The native assessment rejects additional keys outside that list.
+The first boot imports only the approved key bundle after the fingerprint assessment.
 
 Balboa also excludes `package_postfix_installed` to obey the requested minimal package scope.
 All flavors forbid the Postfix package through a separate package assessment.
