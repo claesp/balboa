@@ -1,0 +1,6 @@
+/build/
+/cache/
+/site.json
+__pycache__/
+*.pyc
+/.venv/
