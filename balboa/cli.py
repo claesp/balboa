@@ -69,7 +69,8 @@ def fetch(args):
         gpg = ["gpg", "--homedir", temp, "--batch", "--no-auto-key-retrieve"]
         keys = run(gpg + ["--with-colons", "--show-keys", key], capture_output=True, text=True)
         fingerprints = [line.split(":")[9] for line in keys.stdout.splitlines() if line.startswith("fpr:")]
-        if not fingerprints or fingerprints[0] != lock["key_fingerprint"]:
+        primary_keys = [line for line in keys.stdout.splitlines() if line.startswith("pub:")]
+        if len(primary_keys) != 1 or not fingerprints or fingerprints[0] != lock["key_fingerprint"]:
             raise ValueError("The Rocky signing key fingerprint does not match the source lock.")
         run(gpg + ["--import", key], capture_output=True)
         run(gpg + ["--verify", signature, sums])
@@ -127,13 +128,16 @@ def iso(args):
                        "--cmdline", cmdline, "/source/" + source.name, "/output/" + output.name],
                       [(source.parent, "/source", "ro"), (ks.parent, "/input", "ro"),
                        (output.parent, "/output", "rw")])
+        container(["python3", "/workspace/tests/iso_checks.py", "/media/" + output.name, "/input/" + ks.name],
+                  [(ROOT, "/workspace", "ro"), (output.parent, "/media", "ro"), (ks.parent, "/input", "ro")])
     except BaseException:
         output.unlink(missing_ok=True)
         raise
-    container(["python3", "/workspace/tests/iso_checks.py", "/media/" + output.name, "/input/" + ks.name],
-              [(ROOT, "/workspace", "ro"), (output.parent, "/media", "ro"), (ks.parent, "/input", "ro")])
     metadata.update({"iso_sha256": sha256(output), "source_sha256": image["sha256"],
-                     "usb_uefi": args.native, "tools_base": lock["container"]})
+                     "usb_uefi": args.native, "tools_base": lock["container"],
+                     "source_lock_sha256": sha256(LOCK)})
+    metadata["tools_image_id"] = run(["podman", "image", "inspect", TOOLS, "--format", "{{.Id}}"],
+                                      capture_output=True, text=True).stdout.strip()
     tool_packages = container(["rpm", "-qa"], capture_output=True).stdout
     output.with_suffix(".packages.txt").write_text(tool_packages)
     output.with_suffix(".json").write_text(json.dumps(metadata, indent=2) + "\n")

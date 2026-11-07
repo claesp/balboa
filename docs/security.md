@@ -32,6 +32,10 @@ Separate filesystems contain `/home`, `/tmp`, `/var`, `/var/tmp`, `/var/log`, an
 Temporary filesystems reject direct program execution through the `noexec` mount flag.
 The root account remains locked.
 
+GRUB requires a password for changes to boot commands.
+The site file supplies its PBKDF2 password digest.
+Normal boot does not require that password.
+
 The operator account requires a password for sudo.
 Sudo permits an authorized user to do administrator commands.
 The repository contains no production passwords or private keys.

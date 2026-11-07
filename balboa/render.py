@@ -16,6 +16,7 @@ def valid_site(site):
         "hostname": r"[a-z0-9](?:[a-z0-9.-]{0,251}[a-z0-9])?",
         "username": r"[a-z_][a-z0-9_-]{0,30}",
         "password_hash": r"\$6\$(?:rounds=[0-9]+\$)?[A-Za-z0-9./]{1,16}\$[A-Za-z0-9./]{86}",
+        "bootloader_password_hash": r"grub\.pbkdf2\.sha512\.[0-9]{5,7}\.[0-9A-F]{128}\.[0-9A-F]{128}",
         "ssh_public_key": r"ssh-ed25519 [A-Za-z0-9+/]+={0,2}(?: [A-Za-z0-9@._ -]+)?",
         "timezone": r"[A-Za-z_+-]+(?:/[A-Za-z_+-]+){0,2}",
         "keyboard": r"[A-Za-z0-9_-]+",
@@ -28,6 +29,8 @@ def valid_site(site):
             raise ValueError(f"The site field {key} is not permitted.")
     if site["username"] in {"root", "nobody"}:
         raise ValueError("The administrator must have a separate account.")
+    if not 10000 <= int(site["bootloader_password_hash"].split(".")[3]) <= 1000000:
+        raise ValueError("The GRUB digest requires 10000 to 1000000 iterations.")
     blob = base64.b64decode(site["ssh_public_key"].split()[1], validate=True)
     if len(blob) != 51 or blob[:19] != b"\x00\x00\x00\x0bssh-ed25519\x00\x00\x00\x20":
         raise ValueError("The SSH key must contain a valid Ed25519 public key.")
@@ -53,7 +56,7 @@ def render_text(flavor, site, disk, kind, lab=False, passphrase=None):
         raise ValueError("A lab installation requires a generated encryption secret.")
     definition = json.loads((ROOT / "flavors" / f"{flavor}.json").read_text())
     files = ""
-    for name in ("baseline.sh", "harden.sh", "audit.sh", "result_gate.py"):
+    for name in ("baseline.sh", "harden.sh", "audit.sh", "failure.sh", "result_gate.py"):
         files += file_fragment("/usr/local/libexec/balboa/" + name, (ROOT / "guest" / name).read_text(), True)
     for name in ("balboa-harden.service", "balboa-audit.service"):
         files += file_fragment("/etc/systemd/system/" + name, (ROOT / "guest" / name).read_text())
@@ -87,13 +90,19 @@ def render(args):
     if args.lab:
         password = secrets.token_urlsafe(32)
         passphrase = secrets.token_urlsafe(32)
+        boot_password = secrets.token_urlsafe(32)
+        boot_salt = secrets.token_bytes(64)
+        boot_digest = hashlib.pbkdf2_hmac("sha512", boot_password.encode(), boot_salt, 100000)
+        boot_hash = f"grub.pbkdf2.sha512.100000.{boot_salt.hex().upper()}.{boot_digest.hex().upper()}"
         hashed = subprocess.run(["openssl", "passwd", "-6", "-stdin"], input=password + "\n",
                                 capture_output=True, text=True, check=True).stdout.strip()
         subprocess.run(["ssh-keygen", "-q", "-t", "ed25519", "-N", "", "-f", str(output / "id_ed25519")], check=True)
         site = {"hostname": f"{args.flavor}.lab.test", "username": "operator", "password_hash": hashed,
+                "bootloader_password_hash": boot_hash,
                 "ssh_public_key": (output / "id_ed25519.pub").read_text().strip(),
                 "timezone": "UTC", "keyboard": "us", "language": "en_US.UTF-8"}
-        (output / "lab-secrets.json").write_text(json.dumps({"password": password, "passphrase": passphrase}) + "\n")
+        (output / "lab-secrets.json").write_text(json.dumps({"password": password, "passphrase": passphrase,
+                                                            "boot_password": boot_password}) + "\n")
         disk = args.disk or "vda"
     else:
         site = json.loads(args.site.read_text())

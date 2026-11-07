@@ -36,6 +36,7 @@ Balboa retains signature files in `cache/`.
 [Build and installation](build.md) describes production media and source selection.
 [Security policy](security.md) describes the controls and release conditions.
 [Testing](testing.md) describes Podman and QEMU tests.
+[Maintenance](maintenance.md) describes source and policy changes.
 
 ## Source references
 

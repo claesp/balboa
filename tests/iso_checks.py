@@ -1,6 +1,5 @@
 """Inspect customized ISO boot entries and embedded Kickstart contents."""
 
-import hashlib
 from pathlib import Path
 import subprocess
 import sys

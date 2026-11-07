@@ -2,6 +2,7 @@
   "hostname": "rocky.example.test",
   "username": "operator",
   "password_hash": "REPLACE_WITH_A_SHA512_CRYPT_HASH",
+  "bootloader_password_hash": "REPLACE_WITH_A_GRUB_PBKDF2_HASH",
   "ssh_public_key": "REPLACE_WITH_AN_ED25519_PUBLIC_KEY",
   "timezone": "Europe/Stockholm",
   "keyboard": "us",

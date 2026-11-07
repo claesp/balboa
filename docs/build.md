@@ -56,6 +56,18 @@ Put the password digest in `password_hash` in `site.json`.
 Put the public key contents in `ssh_public_key` in `site.json`.
 Set the hostname and local language fields in `site.json`.
 
+Create a bootloader password digest on a Rocky Linux host with `grub2-tools` installed.
+The bootloader starts the installed operating system.
+Its password protects changes to boot commands.
+
+```sh
+grub2-mkpasswd-pbkdf2
+```
+
+Put the resulting `grub.pbkdf2.sha512` digest in `bootloader_password_hash` in `site.json`.
+Use a unique password that differs from the account and disk passwords.
+Keep that password in the approved recovery vault.
+
 Do not copy the private SSH key into an image.
 The private key permits access to systems that trust its public key.
 Keep the private key in approved secure storage.
@@ -128,6 +140,7 @@ Secure Boot still requires a separate firmware test.
 
 Each ISO has a JSON manifest and a package list for the tools.
 The manifest records the source digest, Kickstart digest, flavor, and security profile.
+It also records the local tool image identity and source lock digest.
 The installed system records its package list and datastream digest separately.
 
 Generated Kickstart files contain the password digest and public key.

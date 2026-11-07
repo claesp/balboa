@@ -5,15 +5,14 @@ source /etc/balboa/image.conf
 state=/var/lib/balboa
 out=$state/evidence
 exec >> "$out/audit.log" 2>&1
+source /usr/local/libexec/balboa/failure.sh
 ds=/usr/share/xml/scap/ssg/content/ssg-rl10-ds.xml
-set +e
+scan=0
 oscap xccdf eval --profile "$PROFILE" --results "$out/assessment.xml" \
-    --results-arf "$out/assessment-arf.xml" --report "$out/assessment.html" "$ds"
-scan=$?
+    --results-arf "$out/assessment-arf.xml" --report "$out/assessment.html" "$ds" || scan=$?
+gate=0
 python3 /usr/local/libexec/balboa/result_gate.py "$out/assessment.xml" \
-    --profile "$PROFILE" > "$out/summary.json"
-gate=$?
-set -e
+    --profile "$PROFILE" > "$out/summary.json" || gate=$?
 printf '%s\n' "$scan" > "$out/oscap-exit-status"
 lsblk -o NAME,TYPE,FSTYPE,MOUNTPOINTS > "$out/storage.txt"
 findmnt > "$out/mounts.txt"

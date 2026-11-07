@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 import tarfile
 import tempfile
+import subprocess
 import unittest
 import xml.etree.ElementTree as ET
 
@@ -23,6 +24,7 @@ class PipelineTests(unittest.TestCase):
         blob = b"\x00\x00\x00\x0bssh-ed25519\x00\x00\x00\x20" + bytes(range(32))
         self.site = {"hostname": "host.example.test", "username": "operator",
                      "password_hash": "$6$salt$" + "a" * 86,
+                     "bootloader_password_hash": "grub.pbkdf2.sha512.100000." + "A" * 128 + "." + "B" * 128,
                      "ssh_public_key": "ssh-ed25519 " + base64.b64encode(blob).decode(),
                      "timezone": "UTC", "keyboard": "us", "language": "en_US.UTF-8"}
 
@@ -131,6 +133,64 @@ class PipelineTests(unittest.TestCase):
     def test_guest_archive_extracts_only_under_target(self):
         extract_evidence(self.archive("evidence/summary.json"), self.root / "collected")
         self.assertEqual((self.root / "collected/evidence/summary.json").read_bytes(), b"test")
+
+    def test_first_boot_retains_findings_then_rejects_assessment(self):
+        # Exercise the real service scripts without changing the host system.
+        import os
+        repository = Path(__file__).resolve().parent.parent
+        guest = self.root / "guest"
+        guest.mkdir()
+        state = self.root / "state"
+        aide = self.root / "aide"
+        aide.mkdir()
+        content = self.root / "content"
+        content.mkdir()
+        (content / "ssg-rl10-ds.xml").touch()
+        config = self.root / "image.conf"
+        config.write_text(f"PROFILE={PROFILE}\nLAB=no\n")
+        replacements = {"/etc/balboa/image.conf": str(config), "/var/lib/balboa": str(state),
+                        "/usr/local/libexec/balboa": str(guest), "/var/lib/aide": str(aide),
+                        "/usr/share/xml/scap/ssg/content": str(content)}
+        for name in ("harden.sh", "audit.sh", "failure.sh", "result_gate.py"):
+            text = (repository / "guest" / name).read_text()
+            for old, new in replacements.items():
+                text = text.replace(old, new)
+            (guest / name).write_text(text)
+        fixture = self.report(["pass"] * 100 + ["fail"])
+        programs = self.root / "bin"
+        programs.mkdir()
+        stubs = {
+            "oscap": f'''#!/usr/bin/python3
+import shutil, sys
+if sys.argv[1] == "info":
+    print("{PROFILE}:CIS Level 2")
+    sys.exit(0)
+for flag in ("--results", "--results-arf", "--report"):
+    shutil.copyfile("{fixture}", sys.argv[sys.argv.index(flag) + 1])
+sys.exit(2)
+''',
+            "aide": f"#!/bin/sh\ntouch {aide}/aide.db.new.gz\n",
+            "rpm": "#!/bin/sh\nprintf 'fixture-package\\n'\n",
+            "systemctl": "#!/bin/sh\nexit 0\n",
+        }
+        for name, text in stubs.items():
+            (programs / name).write_text(text)
+            (programs / name).chmod(0o755)
+        env = {**os.environ, "PATH": f"{programs}:{os.environ['PATH']}"}
+        hardening = subprocess.run(["bash", str(guest / "harden.sh")], env=env)
+        self.assertEqual(hardening.returncode, 0, (state / "evidence/harden.log").read_text())
+        self.assertTrue((state / "remediated").exists())
+        self.assertFalse(json.loads((state / "evidence/remediation-summary.json").read_text())["passed"])
+        # The audit also calls system inspection tools, which are constrained here.
+        for name in ("lsblk", "findmnt", "getenforce"):
+            (programs / name).write_text("#!/bin/sh\nprintf 'fixture\\n'\n")
+            (programs / name).chmod(0o755)
+        assessment = subprocess.run(["bash", str(guest / "audit.sh")], env=env)
+        self.assertNotEqual(assessment.returncode, 0)
+        self.assertTrue((state / "assessed").exists())
+        self.assertFalse((state / "assessment-passed").exists())
+        self.assertEqual((state / "evidence/oscap-exit-status").read_text().strip(), "2")
+        self.assertFalse(json.loads((state / "evidence/summary.json").read_text())["passed"])
 
 
 if __name__ == "__main__":

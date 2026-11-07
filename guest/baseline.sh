@@ -81,6 +81,7 @@ cat > /etc/audit/rules.d/60-balboa.rules <<'EOF'
 -w /etc/ssh/sshd_config.d -p wa -k sshd
 EOF
 systemctl disable sshd.service 2>/dev/null || true
+systemctl mask kdump.service
 if [[ "$DESKTOP" == yes ]]; then
     install -d /etc/dconf/profile /etc/dconf/db/local.d /etc/dconf/db/local.d/locks
     cat > /etc/dconf/db/local.d/00-balboa <<'EOF'
@@ -93,6 +94,7 @@ lock-delay=uint32 0
 disable-user-list=true
 EOF
     printf 'user-db:user\nsystem-db:local\n' > /etc/dconf/profile/user
+    printf 'user-db:user\nsystem-db:local\n' > /etc/dconf/profile/gdm
     printf '/org/gnome/desktop/session/idle-delay\n/org/gnome/desktop/screensaver/lock-enabled\n/org/gnome/desktop/screensaver/lock-delay\n' > /etc/dconf/db/local.d/locks/00-balboa
     dconf update
 fi

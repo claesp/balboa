@@ -1,6 +1,5 @@
 """Operate isolated QEMU machines and collect guest assessment evidence."""
 
-import hashlib
 import json
 import os
 from pathlib import Path
@@ -32,7 +31,8 @@ def observe(command, log_path, timeout, passphrase):
                     log.write(data)
                     log.flush()
                     recent = (recent + data)[-4096:]
-                    if passphrase and not unlocked and b"passphrase" in recent.lower() and b":" in recent.split(b"passphrase")[-1]:
+                    prompt = recent.lower()
+                    if passphrase and not unlocked and b"passphrase" in prompt and b":" in prompt.split(b"passphrase")[-1]:
                         process.stdin.write((passphrase + "\n").encode())
                         process.stdin.flush()
                         unlocked = True
@@ -59,7 +59,7 @@ def extract_evidence(archive, target):
             raise ValueError("The guest evidence exceeds the permitted size.")
         for member in members:
             path = Path(member.name)
-            if path.is_absolute() or ".." in path.parts or path.parts[0] != "evidence":
+            if not path.parts or path.is_absolute() or ".." in path.parts or path.parts[0] != "evidence":
                 raise ValueError("The guest evidence contains an unsafe path.")
             if not member.isfile() and not member.isdir():
                 raise ValueError("The guest evidence contains an unsafe file type.")
@@ -129,14 +129,20 @@ def vm(args):
     print(f"The VM serial log is {log}.", flush=True)
     observe(command, log, args.timeout, passphrase)
     if args.phase == "install":
+        if b"BALBOA_INSTALL_COMPLETE" not in log.read_bytes():
+            raise ValueError("The installer did not report completion. Examine the serial log.")
         print("The installer stopped. Boot the VM to apply the security profile.")
         return
     if not archive.exists() or archive.stat().st_size == 0:
-        print("The VM stopped without assessment evidence. Examine the log before the next boot.")
-        return
+        if b"BALBOA_REMEDIATION_COMPLETE" in log.read_bytes():
+            print("Remediation completed. Boot the VM again for assessment.")
+            return
+        raise ValueError("The VM stopped without remediation or assessment evidence. Examine the serial log.")
     target = work / "collected"
     extract_evidence(archive, target)
     evidence = target / "evidence"
+    if not (evidence / "assessment.xml").exists():
+        raise ValueError(f"The guest service failed before assessment. Examine {evidence}.")
     run(["python3", ROOT / "guest/result_gate.py", evidence / "assessment.xml",
          "--profile", manifest["profile"]])
     if (evidence / "oscap-exit-status").read_text().strip() != "0":
