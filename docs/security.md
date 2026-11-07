@@ -54,13 +54,16 @@ The firmware and boot partitions remain unencrypted.
 
 Separate filesystems contain `/home`, `/tmp`, `/var`, `/var/tmp`, `/var/log`, and `/var/log/audit`.
 Temporary filesystems reject direct program execution through the `noexec` mount flag.
-The root account remains locked.
+The root account stays locked unless the site supplies a separate console password digest.
+The selected CIS profile requires a root password for recovery.
+A locked root account therefore produces a reported finding.
+SSH rejects root login in both cases.
 
 GRUB requires a password for changes to boot commands.
 The site file supplies its PBKDF2 password digest.
 Normal boot does not require that password.
 
-The operator account requires a password for sudo.
+The administrator account requires a password for sudo.
 Sudo permits an authorized user to do administrator commands.
 The repository contains no production passwords or private keys.
 
@@ -103,6 +106,16 @@ Server SSH can operate while the release assessment reports findings.
 Restrict staging access until the security owner accepts the release evidence.
 The administrator can use the local console to examine results.
 The administrator controls each later firewall change.
+
+The images use persistent journald logs and exclude rsyslog.
+The images mask the journal receiver service and socket.
+Central logging uses the journal upload service with HTTPS.
+The site supplies its receiver address and certificate paths.
+See [Site configuration](site.md) for recovery and logging inputs.
+
+Without a receiver configuration, the final assessment reports the missing upload service.
+The automatic assessment does not prove that the remote receiver retains each event.
+The site must test delivery and retention before release.
 
 ## Release conditions
 

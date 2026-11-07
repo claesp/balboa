@@ -76,7 +76,10 @@ EOF
 chmod 0440 /etc/sudoers.d/60-balboa
 visudo -cf /etc/sudoers
 sed -i -E 's/^UMASK[[:space:]]+.*/UMASK 027/; s/^PASS_MAX_DAYS[[:space:]]+.*/PASS_MAX_DAYS 90/; s/^PASS_MIN_DAYS[[:space:]]+.*/PASS_MIN_DAYS 1/' /etc/login.defs
-chage --maxdays 90 --mindays 1 --warndays 7 "$ADMIN_USER"
+chage --lastday "$(date -u +%Y-%m-%d)" --maxdays 90 --mindays 1 --warndays 7 "$ADMIN_USER"
+if [[ "${ROOT_PASSWORD_CONFIGURED:-no}" == yes ]]; then
+    chage --lastday "$(date -u +%Y-%m-%d)" --maxdays 90 --mindays 1 --warndays 7 root
+fi
 cat > /etc/issue <<'EOF'
 Authorized use only. The system records activity.
 EOF
@@ -89,7 +92,7 @@ cat > /etc/systemd/journald.conf.d/60-balboa.conf <<'EOF'
 [Journal]
 Storage=persistent
 Compress=yes
-ForwardToSyslog=yes
+ForwardToSyslog=no
 EOF
 cat > /etc/audit/rules.d/60-balboa.rules <<'EOF'
 -b 8192
@@ -104,6 +107,10 @@ cat > /etc/audit/rules.d/60-balboa.rules <<'EOF'
 EOF
 systemctl disable sshd.service 2>/dev/null || true
 systemctl mask kdump.service
+systemctl mask systemd-journal-remote.service systemd-journal-remote.socket
+if [[ -f /etc/systemd/journal-upload.conf.d/60-balboa.conf ]]; then
+    systemctl enable systemd-journal-upload.service
+fi
 if [[ "$DESKTOP" == yes ]]; then
     install -d /etc/dconf/profile /etc/dconf/db/local.d /etc/dconf/db/local.d/locks
     cat > /etc/dconf/db/local.d/00-balboa <<'EOF'

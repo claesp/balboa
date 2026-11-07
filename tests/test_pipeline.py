@@ -72,6 +72,39 @@ class PipelineTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             valid_site({**self.site, "username": "operator"})
 
+    def test_optional_root_and_logging_configuration(self):
+        site = {**self.site, "root_password_hash": self.site["password_hash"],
+                "journal_upload": {"url": "https://logs.example.test:19532",
+                                   "trusted_certificate_file": "/etc/pki/balboa/ca.pem",
+                                   "client_certificate_file": "/etc/pki/balboa/client.pem",
+                                   "client_key_file": "/etc/pki/balboa/client.key"}}
+        valid_site(site)
+        text, _ = render_text("server", site, "vda", "boot")
+        self.assertIn("rootpw --iscrypted " + self.site["password_hash"], text)
+        self.assertIn("/etc/systemd/journal-upload.conf.d/60-balboa.conf", text)
+        self.assertIn("/etc/systemd/system/systemd-journal-upload.service.d/60-balboa-credentials.conf", text)
+        with self.assertRaises(ValueError):
+            valid_site({**site, "root_password_hash": "plaintext"})
+
+    def test_disposable_tls_never_enters_production_or_uses_other_paths(self):
+        tls = {"ca.pem": "test CA", "client.pem": "test certificate", "client.key": "test private key"}
+        with self.assertRaises(ValueError):
+            render_text("server", self.site, "vda", "boot", lab_tls=tls)
+        with self.assertRaises(ValueError):
+            render_text("server", self.site, "vda", "boot", True, "a" * 40, lab_tls={"../../etc/passwd": "value"})
+        text, _ = render_text("server", self.site, "vda", "boot", True, "a" * 40, lab_tls=tls)
+        self.assertIn("chmod 0600 /etc/pki/balboa/client.key", text)
+        self.assertIn("chmod 0644 /etc/pki/balboa/ca.pem", text)
+
+    def test_logging_rejects_insecure_or_injected_values(self):
+        for upload in ({"url": "http://logs.example.test"},
+                       {"url": "https://user:password@logs.example.test"},
+                       {"url": "https://logs.example.test\nURL=http://other"},
+                       {"url": "https://logs.example.test", "client_key_file": "/etc/pki/key"},
+                       {"url": "https://logs.example.test", "trusted_certificate_file": "/etc/pki/../shadow"}):
+            with self.subTest(upload=upload), self.assertRaises(ValueError):
+                valid_site({**self.site, "journal_upload": upload})
+
     def test_production_requires_disk_and_never_embeds_encryption_secret(self):
         with self.assertRaises(ValueError):
             render_text("server", self.site, None, "boot")

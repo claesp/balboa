@@ -6,7 +6,7 @@ The source media is the authenticated Rocky Linux 10.2 boot ISO.
 
 ## Completed tests
 
-The local suite contains 19 passing tests.
+The local suite contains 22 passing tests.
 It includes site input restrictions, report assessment, guest archive restrictions, and expected OpenSCAP exit handling.
 The suite also tests the serial unlock procedure and installer error detection.
 

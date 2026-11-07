@@ -12,6 +12,7 @@ import tempfile
 
 from .render import render
 from .vm import vm
+from .lab import lab_logger
 
 ROOT = Path(__file__).resolve().parent.parent
 LOCK = ROOT / "sources.lock.json"
@@ -165,6 +166,8 @@ def parser():
     generate.add_argument("--output", type=Path, required=True)
     generate.add_argument("--disk", help="The only disk that the installer can erase.")
     generate.add_argument("--disk-size-gb", type=int, help="Fixed disk budget in decimal GB. Defaults: production 128, lab 32.")
+    generate.add_argument("--lab-logging-dir", type=Path, help="Disposable client TLS directory from lab-logger.")
+    generate.add_argument("--lab-logging-url", default="https://10.0.2.2:19532")
     auth = generate.add_mutually_exclusive_group(required=True)
     auth.add_argument("--site", type=Path)
     auth.add_argument("--lab", action="store_true", help="Generate disposable VM credentials for vda.")
@@ -191,6 +194,11 @@ def parser():
     machine.add_argument("--ovmf-code", type=Path, default=Path("/usr/share/OVMF/OVMF_CODE_4M.fd"))
     machine.add_argument("--ovmf-vars", type=Path, default=Path("/usr/share/OVMF/OVMF_VARS_4M.fd"))
     machine.set_defaults(func=vm)
+    logger = commands.add_parser("lab-logger", help="Start or stop an isolated TLS journal receiver.")
+    logger.add_argument("--directory", type=Path, required=True)
+    logger.add_argument("--port", type=int, default=19532)
+    logger.add_argument("--stop", action="store_true")
+    logger.set_defaults(func=lab_logger)
     return result
 
 

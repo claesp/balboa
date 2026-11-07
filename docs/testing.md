@@ -61,6 +61,28 @@ podman run --rm -v "$PWD:/workspace:ro" localhost/balboa-tools:10 bash /workspac
 
 ## QEMU installation
 
+For a complete logging assessment, start the local TLS collector first.
+The collector uses Podman and requires OpenSSL on the build host.
+The command publishes its port on host loopback only.
+
+```sh
+python3 -m balboa lab-logger --directory build/lab-logging
+python3 -m balboa render --flavor server --lab --lab-logging-dir build/lab-logging/client --output build/server
+```
+
+The certificate authority signs both disposable server and client certificates.
+The certificates expire after two days.
+HAProxy requires a trusted client certificate before it forwards an upload to the receiver.
+The receiver accepts plain HTTP only through container loopback.
+
+QEMU reaches host loopback through its isolated network address `10.0.2.2`.
+The lab renderer uses `https://10.0.2.2:19532` by default.
+For another port, set `--port` on the collector and `--lab-logging-url` on the renderer.
+
+Use separate output directories for workstation and laptop renders.
+Each lab render creates a random root console password in its restricted secrets file.
+Without the collector configuration, the final assessment reports the missing central logging control.
+
 Use disposable lab images only for this automated procedure.
 Lab media contains disk passphrases and disposable account credentials.
 Do not install lab media on production hardware.
@@ -102,6 +124,16 @@ The host places the reports under `collected/evidence/` in the VM directory.
 The host does another report assessment and requires encrypted storage and enforcing SELinux.
 It also requires the fixed disk size, LVM mount sources, mount restrictions, and flavor package exclusions.
 A failed rule causes the final command to return a nonzero status.
+
+The collector retains journals under `build/lab-logging/logs/` on the host.
+After the VM tests, stop the owned collector with this command:
+
+```sh
+python3 -m balboa lab-logger --directory build/lab-logging --stop
+```
+
+The command retains the journal files and disposable keys for examination.
+Before a later test session, use a new directory for fresh certificates.
 
 Before release, examine the HTML report and each manual control.
 Do not release an image because the remediation service completed.

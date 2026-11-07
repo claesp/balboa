@@ -15,7 +15,8 @@
     "cups",
     "avahi",
     "linux-firmware",
-    "postfix"
+    "postfix",
+    "rsyslog"
   ],
   "desktop": false
 }

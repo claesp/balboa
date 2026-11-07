@@ -40,6 +40,7 @@ Balboa retains signature files in `cache/`.
 [Verification record](verification.md) records completed tests and release evidence.
 [Minimal flavors](flavors.md) describes package selection and hardware services.
 [Fixed storage](storage.md) describes disk sizes, LVM, and mount restrictions.
+[Site configuration](site.md) describes recovery credentials and central logging.
 
 ## Source references
 

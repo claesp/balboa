@@ -23,7 +23,8 @@
     "ModemManager",
     "cups",
     "avahi",
-    "postfix"
+    "postfix",
+    "rsyslog"
   ],
   "desktop": true
 }

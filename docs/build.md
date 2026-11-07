@@ -70,6 +70,9 @@ Put the resulting `grub.pbkdf2.sha512` digest in `bootloader_password_hash` in `
 Use a unique password that differs from the account and disk passwords.
 Keep that password in the approved recovery vault.
 
+Set the recovery and central logging fields through [Site configuration](site.md).
+These fields address selected CIS controls that require site decisions.
+
 Do not copy the private SSH key into an image.
 The private key permits access to systems that trust its public key.
 Keep the private key in approved secure storage.

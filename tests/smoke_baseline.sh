@@ -21,6 +21,7 @@ dnf -y --setopt=install_weak_deps=False install "${packages[@]}" > /tmp/balboa-p
     exit 1
 }
 useradd --uid 1000 balboasmoke
+chage --lastday -1 balboasmoke
 install -d /etc/balboa /usr/local/libexec/balboa
 cp /workspace/guest/*.sh /usr/local/libexec/balboa/
 printf 'FLAVOR=%s\nADMIN_USER=balboasmoke\nDESKTOP=%s\nLAB=no\n' "$flavor" "$desktop" > /etc/balboa/image.conf
@@ -35,6 +36,8 @@ bash /workspace/guest/baseline.sh
 test -f /etc/audit/rules.d/60-balboa.rules
 visudo -cf /etc/sudoers
 runuser -u balboasmoke -- test -r /etc/profile.d/60-balboa.sh
+last_change=$(getent shadow balboasmoke | cut -d: -f3)
+[[ "$last_change" =~ ^[0-9]+$ ]]
 if [[ "$desktop" == yes ]]; then
     runuser -u balboasmoke -- test -r /etc/dconf/profile/user
     runuser -u balboasmoke -- test -r /etc/dconf/db/local

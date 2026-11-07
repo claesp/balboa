@@ -32,7 +32,8 @@
     "openssh-server",
     "cups",
     "avahi",
-    "postfix"
+    "postfix",
+    "rsyslog"
   ],
   "desktop": true
 }
