@@ -45,6 +45,20 @@ The parser does not assess package availability or installation behavior.
 A successful parser result does not prove a successful installation.
 Use QEMU for those tests.
 
+## Post-installation test
+
+The baseline test does the post-installation script in a disposable container.
+It installs the explicit packages with weak dependencies disabled.
+The container does not assess kernel or storage controls.
+
+Operate this example on the build host after the lab renderer.
+Replace both flavor references to examine another flavor.
+The container removes its filesystem after the test.
+
+```sh
+podman run --rm -v "$PWD:/workspace:ro" localhost/balboa-tools:10 bash /workspace/tests/smoke_baseline.sh /workspace/build/server/installation.ks server
+```
+
 ## QEMU installation
 
 Use disposable lab images only for this automated procedure.

@@ -1,6 +1,6 @@
 {
   "profile": "xccdf_org.ssgproject.content_profile_cis_workstation_l2",
-  "packages": ["gdm", "gnome-shell", "gnome-session", "gnome-settings-daemon", "gnome-control-center", "nautilus", "ptyxis", "gnome-keyring", "gnome-keyring-pam", "NetworkManager-wifi", "NetworkManager-bluetooth", "wpa_supplicant", "bluez", "gnome-bluetooth-libs", "linux-firmware", "tuned", "tuned-ppd"],
+  "packages": ["gdm", "gnome-shell", "gnome-session", "gnome-settings-daemon", "gnome-control-center", "nautilus", "ptyxis", "gnome-keyring", "gnome-keyring-pam", "NetworkManager-wifi", "NetworkManager-bluetooth", "wpa_supplicant", "bluez", "gnome-bluetooth-libs", "linux-firmware", "iwlwifi-dvm-firmware", "iwlwifi-mvm-firmware", "atheros-firmware", "brcmfmac-firmware", "realtek-firmware", "amd-gpu-firmware", "intel-gpu-firmware", "alsa-sof-firmware", "intel-audio-firmware", "tuned", "tuned-ppd"],
   "exclude": ["openssh-server", "cups", "avahi"],
   "desktop": true
 }

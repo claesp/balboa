@@ -18,6 +18,10 @@ lsblk -o NAME,TYPE,FSTYPE,MOUNTPOINTS > "$out/storage.txt"
 findmnt > "$out/mounts.txt"
 getenforce > "$out/selinux.txt"
 systemctl --failed --no-pager > "$out/failed-units.txt"
+if [[ "$FLAVOR" == server ]]; then
+    sshd -t
+    systemctl is-active sshd.service > "$out/sshd.txt"
+fi
 if [[ "$scan" == 0 && "$gate" == 0 ]]; then
     touch "$state/assessment-passed"
 else

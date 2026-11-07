@@ -55,6 +55,8 @@ ssh-keygen -t ed25519 -f ~/.ssh/balboa_operator
 Put the password digest in `password_hash` in `site.json`.
 Put the public key contents in `ssh_public_key` in `site.json`.
 Set the hostname and local language fields in `site.json`.
+Use a separate administrator name that does not identify a system account.
+The renderer rejects reserved names such as `root` and `operator`.
 
 Create a bootloader password digest on a Rocky Linux host with `grub2-tools` installed.
 The bootloader starts the installed operating system.

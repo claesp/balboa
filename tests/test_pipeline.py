@@ -24,7 +24,7 @@ class PipelineTests(unittest.TestCase):
         # An Ed25519 wire-format blob. It carries no private key.
         import base64
         blob = b"\x00\x00\x00\x0bssh-ed25519\x00\x00\x00\x20" + bytes(range(32))
-        self.site = {"hostname": "host.example.test", "username": "operator",
+        self.site = {"hostname": "host.example.test", "username": "adminuser",
                      "password_hash": "$6$salt$" + "a" * 86,
                      "bootloader_password_hash": "grub.pbkdf2.sha512.100000." + "A" * 128 + "." + "B" * 128,
                      "ssh_public_key": "ssh-ed25519 " + base64.b64encode(blob).decode(),
@@ -59,6 +59,8 @@ class PipelineTests(unittest.TestCase):
             valid_site({**self.site, "ssh_public_key": "ssh-ed25519 AAAA"})
         with self.assertRaises(ValueError):
             valid_site({**self.site, "username": "root"})
+        with self.assertRaises(ValueError):
+            valid_site({**self.site, "username": "operator"})
 
     def test_production_requires_disk_and_never_embeds_encryption_secret(self):
         with self.assertRaises(ValueError):
@@ -176,6 +178,7 @@ class PipelineTests(unittest.TestCase):
         (self.root / "packages.txt").write_text("openssh-server-9.9p1-1.el10.x86_64\n")
         (self.root / "selinux.txt").write_text("Enforcing\n")
         (self.root / "storage.txt").write_text("vda\nluks-test crypt\nsystem-root lvm\n")
+        (self.root / "sshd.txt").write_text("active\n")
         return {"flavor": "server", "storage": plan}, {"exclude": ["bluez", "NetworkManager-wifi"]}
 
     def test_guest_evidence_rejects_unrestricted_temporary_mounts(self):

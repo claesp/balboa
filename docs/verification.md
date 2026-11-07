@@ -13,6 +13,7 @@ The suite also tests the serial unlock procedure and installer error detection.
 All three flavors pass the RHEL10 Kickstart parser.
 All guest shell programs pass Bash syntax tests.
 The systemd service definitions pass inspection with their executable paths present.
+The minimal post-installation script passes the disposable container test for all three flavors.
 
 All three flavors pass the package availability test against official BaseOS and AppStream repositories.
 The ISO tests accept the embedded Kickstart contents for all three flavors.

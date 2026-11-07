@@ -41,6 +41,8 @@ The image does not include browsers, office applications, or printing services b
 The laptop adds the same minimal GNOME session.
 It also adds wireless networking, Bluetooth, device firmware, and power management.
 The image includes `tuned-ppd` for GNOME power controls.
+Explicit firmware packages support common Intel, Atheros, Broadcom, and Realtek wireless devices.
+The laptop also includes Intel and AMD graphics firmware and Intel audio firmware.
 
 NetworkManager Bluetooth support requires the mobile networking stack in Rocky Linux 10.
 The package solver retains that dependency chain.

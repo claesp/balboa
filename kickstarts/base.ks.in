@@ -6,7 +6,7 @@ timezone @@TIMEZONE@@ --utc
 @@SOURCE@@
 network --bootproto=dhcp --device=link --activate --hostname=@@HOSTNAME@@
 rootpw --lock
-user --name=@@USERNAME@@ --groups=wheel --iscrypted --password=@@PASSWORD_HASH@@
+user --name=@@USERNAME@@ --uid=1000 --groups=wheel --iscrypted --password=@@PASSWORD_HASH@@
 sshkey --username=@@USERNAME@@ "@@SSH_PUBLIC_KEY@@"
 authselect select local with-faillock
 selinux --enforcing
@@ -29,6 +29,7 @@ poweroff
 @core --nodefaults
 @@PACKAGES@@
 audit
+audit-rules
 aide
 authselect
 chrony
@@ -36,9 +37,16 @@ cryptsetup
 firewalld
 openscap-scanner
 scap-security-guide
+policycoreutils
+selinux-policy-targeted
+libpwquality
+microcode_ctl
+amd-ucode-firmware
 python3
 rsyslog
 sudo
+tar
+gzip
 -telnet
 -rsh
 -tftp

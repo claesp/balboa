@@ -29,7 +29,10 @@ def valid_site(site):
     for key, pattern in patterns.items():
         if not isinstance(site[key], str) or not re.fullmatch(pattern, site[key]):
             raise ValueError(f"The site field {key} is not permitted.")
-    if site["username"] in {"root", "nobody"}:
+    reserved = {"root", "bin", "daemon", "adm", "lp", "sync", "shutdown", "halt", "mail", "operator",
+                "games", "ftp", "nobody", "dbus", "sshd", "chrony", "polkitd", "systemd-network",
+                "systemd-resolve", "tss", "unbound", "rpc", "rpcuser", "nfsnobody", "cockpit-ws"}
+    if site["username"] in reserved:
         raise ValueError("The administrator must have a separate account.")
     if not 10000 <= int(site["bootloader_password_hash"].split(".")[3]) <= 1000000:
         raise ValueError("The GRUB digest requires 10000 to 1000000 iterations.")
@@ -102,7 +105,7 @@ def render(args):
         hashed = subprocess.run(["openssl", "passwd", "-6", "-stdin"], input=password + "\n",
                                 capture_output=True, text=True, check=True).stdout.strip()
         subprocess.run(["ssh-keygen", "-q", "-t", "ed25519", "-N", "", "-f", str(output / "id_ed25519")], check=True)
-        site = {"hostname": f"{args.flavor}.lab.test", "username": "operator", "password_hash": hashed,
+        site = {"hostname": f"{args.flavor}.lab.test", "username": "balboa", "password_hash": hashed,
                 "bootloader_password_hash": boot_hash,
                 "ssh_public_key": (output / "id_ed25519.pub").read_text().strip(),
                 "timezone": "UTC", "keyboard": "us", "language": "en_US.UTF-8"}

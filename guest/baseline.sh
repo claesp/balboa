@@ -1,8 +1,12 @@
 #!/bin/bash
 set -euo pipefail
 source /etc/balboa/image.conf
+if (( $(id -u "$ADMIN_USER") < 1000 )); then
+    printf 'The administrator account uses a reserved system identity.\n' >&2
+    exit 1
+fi
 install -d -m 0700 /var/lib/balboa/evidence
-install -d /etc/ssh/sshd_config.d /etc/sysctl.d /etc/security/pwquality.conf.d
+install -d /etc/ssh/sshd_config.d /etc/sysctl.d /etc/security/pwquality.conf.d /etc/audit/rules.d
 cat > /etc/ssh/sshd_config.d/00-balboa.conf <<'EOF'
 PermitRootLogin no
 PasswordAuthentication no

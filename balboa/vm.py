@@ -36,6 +36,7 @@ def observe(command, log_path, timeout, passphrase):
                         b"Non interactive installation failed:",
                         b"Unable to allocate requested partition scheme.",
                         b"The following mandatory spokes are not completed:",
+                        b"occurred during the execution of the post-installation script",
                     )):
                         raise ValueError(f"The installer rejected the configuration. Examine {log_path}.")
                     prompt = recent.lower()
@@ -91,6 +92,8 @@ def inspect_system(manifest, evidence, definition):
         raise ValueError(f"The guest contains excluded packages: {', '.join(sorted(forbidden))}.")
     if ("openssh-server" in packages) != (manifest["flavor"] == "server"):
         raise ValueError("The SSH server package does not match the selected flavor.")
+    if manifest["flavor"] == "server" and (evidence / "sshd.txt").read_text().strip() != "active":
+        raise ValueError("The server SSH service did not start.")
     mounts = {}
     for line in (evidence / "mounts.txt").read_text().splitlines():
         match = re.search(r"(/\S*)\s+(/dev/mapper/system-\S+)\s+(\S+)\s+(\S+)", line)
