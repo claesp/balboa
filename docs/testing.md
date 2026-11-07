@@ -86,6 +86,7 @@ The final boot exports the evidence through a dedicated serial channel.
 
 The host places the reports under `collected/evidence/` in the VM directory.
 The host does another report assessment and requires encrypted storage and enforcing SELinux.
+It also requires the fixed disk size, LVM mount sources, mount restrictions, and flavor package exclusions.
 A failed rule causes the final command to return a nonzero status.
 
 Before release, examine the HTML report and each manual control.

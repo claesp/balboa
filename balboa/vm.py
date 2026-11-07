@@ -3,6 +3,7 @@
 import json
 import os
 from pathlib import Path
+import re
 import selectors
 import shutil
 import subprocess
@@ -83,6 +84,31 @@ def extract_evidence(archive, target):
                     shutil.copyfileobj(source, output)
 
 
+def inspect_system(manifest, evidence, definition):
+    packages = {line.rsplit("-", 2)[0] for line in (evidence / "packages.txt").read_text().splitlines()}
+    forbidden = packages.intersection(definition["exclude"])
+    if forbidden:
+        raise ValueError(f"The guest contains excluded packages: {', '.join(sorted(forbidden))}.")
+    if ("openssh-server" in packages) != (manifest["flavor"] == "server"):
+        raise ValueError("The SSH server package does not match the selected flavor.")
+    mounts = {}
+    for line in (evidence / "mounts.txt").read_text().splitlines():
+        match = re.search(r"(/\S*)\s+(/dev/mapper/system-\S+)\s+(\S+)\s+(\S+)", line)
+        if match:
+            mounts[match[1]] = (match[2], set(match[4].split(",")))
+    for volume in manifest["storage"]["volumes"]:
+        if volume["mount"] == "swap":
+            continue
+        entry = mounts.get(volume["mount"])
+        required = set(volume["options"].split(",")) - {"defaults", ""}
+        if not entry or entry[0] != f'/dev/mapper/system-{volume["name"]}' or not required <= entry[1]:
+            raise ValueError(f'The guest mount does not match the LVM policy: {volume["mount"]}.')
+    if (evidence / "selinux.txt").read_text().strip() != "Enforcing":
+        raise ValueError("The guest did not enforce SELinux.")
+    if "crypt" not in (evidence / "storage.txt").read_text():
+        raise ValueError("The guest did not report encrypted storage.")
+
+
 def vm(args):
     from .cli import ROOT, run, sha256
 
@@ -149,12 +175,14 @@ def vm(args):
     evidence = target / "evidence"
     if not (evidence / "assessment.xml").exists():
         raise ValueError(f"The guest service failed before assessment. Examine {evidence}.")
+    definition = json.loads((ROOT / "flavors" / f'{manifest["flavor"]}.json').read_text())
+    inspect_system(manifest, evidence, definition)
+    disk_info = json.loads(run(["qemu-img", "info", "--output=json", disk], capture_output=True, text=True).stdout)
+    if disk_info["virtual-size"] != manifest["storage"]["disk_bytes"]:
+        raise ValueError("The virtual disk size does not match the fixed storage policy.")
+    print("The package boundary and fixed encrypted LVM mount tests passed.")
     run(["python3", ROOT / "guest/result_gate.py", evidence / "assessment.xml",
          "--profile", manifest["profile"]])
     if (evidence / "oscap-exit-status").read_text().strip() != "0":
         raise ValueError("The guest scanner returned an error or findings.")
-    if (evidence / "selinux.txt").read_text().strip() != "Enforcing":
-        raise ValueError("The guest did not enforce SELinux.")
-    if "crypt" not in (evidence / "storage.txt").read_text():
-        raise ValueError("The guest did not report encrypted storage.")
     print(f"The automated assessment passed. Review the manual controls in {evidence}.")

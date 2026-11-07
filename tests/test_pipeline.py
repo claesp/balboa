@@ -10,7 +10,7 @@ import xml.etree.ElementTree as ET
 
 from balboa.cli import checksum_entry
 from balboa.render import render_text, valid_site
-from balboa.vm import extract_evidence, observe
+from balboa.vm import extract_evidence, inspect_system, observe
 from balboa.storage import layout
 from guest.result_gate import assess, NS
 
@@ -165,6 +165,33 @@ class PipelineTests(unittest.TestCase):
         program = 'print("Non interactive installation failed: missing package", flush=True)'
         with self.assertRaises(ValueError):
             observe([sys.executable, "-c", program], self.root / "serial.log", 10, None)
+
+    def system_evidence(self):
+        plan = layout(lab=True)
+        mounts = []
+        for volume in plan["volumes"]:
+            if volume["mount"] != "swap":
+                mounts.append(f'{volume["mount"]} /dev/mapper/system-{volume["name"]} xfs rw,{volume["options"]}')
+        (self.root / "mounts.txt").write_text("\n".join(mounts))
+        (self.root / "packages.txt").write_text("openssh-server-9.9p1-1.el10.x86_64\n")
+        (self.root / "selinux.txt").write_text("Enforcing\n")
+        (self.root / "storage.txt").write_text("vda\nluks-test crypt\nsystem-root lvm\n")
+        return {"flavor": "server", "storage": plan}, {"exclude": ["bluez", "NetworkManager-wifi"]}
+
+    def test_guest_evidence_rejects_unrestricted_temporary_mounts(self):
+        manifest, definition = self.system_evidence()
+        inspect_system(manifest, self.root, definition)
+        text = (self.root / "mounts.txt").read_text().replace("nodev,nosuid,noexec", "nodev,nosuid", 1)
+        (self.root / "mounts.txt").write_text(text)
+        with self.assertRaises(ValueError):
+            inspect_system(manifest, self.root, definition)
+
+    def test_guest_evidence_rejects_server_hardware_packages(self):
+        manifest, definition = self.system_evidence()
+        with (self.root / "packages.txt").open("a") as stream:
+            stream.write("NetworkManager-wifi-1.56.0-1.el10.x86_64\n")
+        with self.assertRaises(ValueError):
+            inspect_system(manifest, self.root, definition)
 
     def test_first_boot_retains_findings_then_rejects_assessment(self):
         # Exercise the real service scripts without changing the host system.
