@@ -85,7 +85,22 @@ def extract_evidence(archive, target):
                     shutil.copyfileobj(source, output)
 
 
+def decode_evidence(stream, archive):
+    marker = b"\nBALBOA_EVIDENCE_V1\n"
+    if stream.stat().st_size > 256 * 1024 * 1024:
+        raise ValueError("The evidence stream exceeds the permitted size.")
+    data = stream.read_bytes()
+    if data.count(marker) != 1:
+        raise ValueError("The evidence stream must contain exactly one report frame.")
+    payload = data.split(marker, 1)[1]
+    if not payload.startswith(b"\x1f\x8b"):
+        raise ValueError("The evidence frame does not contain a compressed archive.")
+    archive.write_bytes(payload)
+
+
 def inspect_system(manifest, evidence, definition):
+    if not json.loads((evidence / "native-final.json").read_text())["passed"]:
+        raise ValueError("The native Rocky policy tests did not pass.")
     packages = {line.rsplit("-", 2)[0] for line in (evidence / "packages.txt").read_text().splitlines()}
     forbidden = packages.intersection(definition["exclude"])
     if forbidden:
@@ -152,8 +167,9 @@ def vm(args):
                     "-drive", f"if=pflash,format=raw,unit=1,file={variables}"]
     if args.phase == "install":
         command += ["-cdrom", str(iso), "-boot", "once=d"]
+    stream = work / "evidence.stream"
     archive = work / "evidence.tar.gz"
-    command += ["-serial", f"file:{archive}"]
+    command += ["-serial", f"file:{stream}"]
     # QEMU uses commas to separate drive and chardev properties.
     if any("," in str(p) for p in (iso, work, args.ovmf_code, args.ovmf_vars)):
         raise ValueError("QEMU paths cannot contain commas.")
@@ -168,11 +184,12 @@ def vm(args):
             raise ValueError("The installer did not report completion. Examine the serial log.")
         print("The installer stopped. Boot the VM to apply the security profile.")
         return
-    if not archive.exists() or archive.stat().st_size == 0:
+    if not stream.exists() or b"\nBALBOA_EVIDENCE_V1\n" not in stream.read_bytes():
         if b"BALBOA_REMEDIATION_COMPLETE" in log.read_bytes():
             print("Remediation completed. Boot the VM again for assessment.")
             return
         raise ValueError("The VM stopped without remediation or assessment evidence. Examine the serial log.")
+    decode_evidence(stream, archive)
     target = work / "collected"
     extract_evidence(archive, target)
     evidence = target / "evidence"

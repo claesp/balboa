@@ -13,6 +13,8 @@ These profiles are not substitutes for the Rocky benchmark review.
 The server uses `xccdf_org.ssgproject.content_profile_cis`.
 The workstation and laptop use `xccdf_org.ssgproject.content_profile_cis_workstation_l2`.
 The tool container requires both Level 2 profile titles.
+The installed profiles inherit these base profiles through a tailoring file.
+A tailoring file records explicit changes to a security profile.
 
 The installed system uses `ssg-rl10-ds.xml`.
 A datastream is a file that contains security assessment rules.
@@ -21,6 +23,24 @@ Balboa rejects reports with fewer than 100 applicable rules.
 Balboa rejects reports without a passing rule.
 This requirement prevents an empty assessment from passing.
 The project does not substitute a RHEL datastream when Rocky content is absent.
+
+## Policy differences
+
+The packaged Rocky datastream contains a rule that expects Red Hat signing keys.
+Balboa replaces `ensure_redhat_gpgkey_installed` with a native Rocky signing-key assessment.
+That assessment requires the pinned Rocky fingerprint in both the key file and RPM database.
+
+Balboa also excludes `package_postfix_installed` to obey the requested minimal package scope.
+All flavors forbid the Postfix package through a separate package assessment.
+This mail agent exclusion is a declared policy deviation that requires review before release.
+
+The remaining selected CIS rules stay enabled.
+The ISO manifest records both profile differences.
+The reports include the native assessments before remediation, after remediation, and after restart.
+
+These images use CIS Level 2 based profiles with declared differences.
+They do not claim conformance to an unmodified CIS profile.
+The security owner must examine the differences against the applicable Rocky benchmark.
 
 ## Installed controls
 

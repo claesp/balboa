@@ -14,6 +14,7 @@ KbdInteractiveAuthentication no
 PermitEmptyPasswords no
 X11Forwarding no
 MaxAuthTries 3
+AllowGroups wheel
 LoginGraceTime 60
 EOF
 cat > /etc/sysctl.d/60-balboa.conf <<'EOF'

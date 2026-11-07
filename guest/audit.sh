@@ -8,12 +8,14 @@ exec >> "$out/audit.log" 2>&1
 source /usr/local/libexec/balboa/failure.sh
 ds=/usr/share/xml/scap/ssg/content/ssg-rl10-ds.xml
 scan=0
-oscap xccdf eval --profile "$PROFILE" --results "$out/assessment.xml" \
+oscap xccdf eval --tailoring-file /etc/balboa/tailoring.xml --profile "$PROFILE" --results "$out/assessment.xml" \
     --results-arf "$out/assessment-arf.xml" --report "$out/assessment.html" "$ds" || scan=$?
 gate=0
 python3 /usr/local/libexec/balboa/result_gate.py "$out/assessment.xml" \
     --profile "$PROFILE" > "$out/summary.json" || gate=$?
 printf '%s\n' "$scan" > "$out/oscap-exit-status"
+python3 /usr/local/libexec/balboa/native_checks.py > "$out/native-final.json"
+rpm -qa | sort > "$out/packages.txt"
 lsblk -o NAME,TYPE,FSTYPE,MOUNTPOINTS > "$out/storage.txt"
 findmnt > "$out/mounts.txt"
 getenforce > "$out/selinux.txt"
@@ -34,4 +36,7 @@ if [[ "$LAB" == yes ]]; then
     sync
     systemctl --no-block poweroff
 fi
-[[ "$scan" == 0 && "$gate" == 0 ]]
+if [[ "$scan" == 0 && "$gate" == 0 ]]; then
+    exit 0
+fi
+exit 1

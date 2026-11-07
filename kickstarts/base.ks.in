@@ -47,6 +47,7 @@ rsyslog
 sudo
 tar
 gzip
+gnupg2
 -telnet
 -rsh
 -tftp

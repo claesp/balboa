@@ -18,6 +18,15 @@ def main():
         profile = root.find(f".//x:Profile[@id='xccdf_org.ssgproject.content_profile_{suffix}']", ns)
         if profile is None or title not in profile.findtext("x:title", namespaces=ns):
             raise ValueError(f"The Rocky datastream does not contain {title}.")
+    from balboa.policy import tailoring
+    import json
+    with tempfile.TemporaryDirectory() as temporary:
+        for definition in Path("/workspace/flavors").glob("*.json"):
+            profile_id, text = tailoring(definition.stem, json.loads(definition.read_text())["profile"])
+            policy = Path(temporary) / "tailoring.xml"
+            policy.write_text(text)
+            subprocess.run(["oscap", "xccdf", "generate", "guide", "--profile", profile_id,
+                            "--tailoring-file", str(policy), "--output", temporary + "/guide.html", str(ds)], check=True)
     if "--packages" in sys.argv:
         import dnf
         from pykickstart.parser import KickstartParser

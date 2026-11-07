@@ -9,6 +9,7 @@ import secrets
 import subprocess
 
 from .storage import kickstart_volumes, layout
+from .policy import EXCLUSIONS, tailoring
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -62,11 +63,16 @@ def render_text(flavor, site, disk, kind, lab=False, passphrase=None, disk_gb=No
     definition = json.loads((ROOT / "flavors" / f"{flavor}.json").read_text())
     storage = layout(disk_gb, lab)
     files = ""
-    for name in ("baseline.sh", "harden.sh", "audit.sh", "failure.sh", "export.sh", "result_gate.py"):
+    for name in ("baseline.sh", "harden.sh", "audit.sh", "failure.sh", "export.sh", "result_gate.py", "native_checks.py"):
         files += file_fragment("/usr/local/libexec/balboa/" + name, (ROOT / "guest" / name).read_text(), True)
     for name in ("balboa-harden.service", "balboa-audit.service"):
         files += file_fragment("/etc/systemd/system/" + name, (ROOT / "guest" / name).read_text())
-    conf = (f"FLAVOR={flavor}\nPROFILE={definition['profile']}\nADMIN_USER={site['username']}\n"
+    profile_id, tailoring_xml = tailoring(flavor, definition["profile"])
+    files += file_fragment("/etc/balboa/tailoring.xml", tailoring_xml)
+    native = {"key_fingerprint": json.loads((ROOT / "sources.lock.json").read_text())["key_fingerprint"],
+              "excluded_packages": definition["exclude"]}
+    files += file_fragment("/etc/balboa/native-policy.json", json.dumps(native))
+    conf = (f"FLAVOR={flavor}\nBASE_PROFILE={definition['profile']}\nPROFILE={profile_id}\nADMIN_USER={site['username']}\n"
             f"DESKTOP={'yes' if definition['desktop'] else 'no'}\nLAB={'yes' if lab else 'no'}\n")
     files += file_fragment("/etc/balboa/image.conf", conf)
     source = ('url --url="https://dl.rockylinux.org/pub/rocky/10/BaseOS/x86_64/os/"\n'
@@ -118,7 +124,9 @@ def render(args):
     text, definition = render_text(args.flavor, site, disk, args.kind, args.lab, passphrase, args.disk_size_gb)
     path = output / "installation.ks"
     path.write_text(text)
-    metadata = {"flavor": args.flavor, "profile": definition["profile"], "lab": args.lab,
+    metadata = {"flavor": args.flavor, "profile": tailoring(args.flavor, definition["profile"])[0],
+                "base_profile": definition["profile"], "lab": args.lab,
+                "policy_deviations": EXCLUSIONS,
                 "disk": disk, "source_kind": args.kind,
                 "storage": layout(args.disk_size_gb, args.lab),
                 "kickstart_sha256": hashlib.sha256(text.encode()).hexdigest()}

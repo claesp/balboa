@@ -9,18 +9,20 @@ exec >> "$out/harden.log" 2>&1
 source /usr/local/libexec/balboa/failure.sh
 ds=/usr/share/xml/scap/ssg/content/ssg-rl10-ds.xml
 test -f "$ds"
-oscap info --profiles "$ds" | grep -F "${PROFILE}:"
+oscap info --profiles "$ds" | grep -F "${BASE_PROFILE}:"
+python3 /usr/local/libexec/balboa/native_checks.py > "$out/native-before.json"
 rpm -qa | sort > "$out/packages.txt"
 sha256sum "$ds" > "$out/datastream.sha256"
 cp /etc/balboa/image.conf "$out/image.conf"
 oscap info "$ds" > "$out/content.txt"
 rc=0
-oscap xccdf eval --remediate --profile "$PROFILE" \
+oscap xccdf eval --remediate --tailoring-file /etc/balboa/tailoring.xml --profile "$PROFILE" \
     --results "$out/remediation.xml" --results-arf "$out/remediation-arf.xml" \
     --report "$out/remediation.html" "$ds" || rc=$?
 [[ "$rc" == 0 || "$rc" == 2 ]]
 python3 /usr/local/libexec/balboa/result_gate.py "$out/remediation.xml" \
     --profile "$PROFILE" --allow-findings > "$out/remediation-summary.json"
+python3 /usr/local/libexec/balboa/native_checks.py > "$out/native-after.json"
 aide --init
 mv /var/lib/aide/aide.db.new.gz /var/lib/aide/aide.db.gz
 if [[ "$FLAVOR" == server ]]; then

@@ -6,7 +6,7 @@ The source media is the authenticated Rocky Linux 10.2 boot ISO.
 
 ## Completed tests
 
-The local suite contains 16 passing tests.
+The local suite contains 18 passing tests.
 It includes site input restrictions, report assessment, guest archive restrictions, and expected OpenSCAP exit handling.
 The suite also tests the serial unlock procedure and installer error detection.
 
@@ -19,9 +19,13 @@ All three flavors pass the package availability test against official BaseOS and
 The ISO tests accept the embedded Kickstart contents for all three flavors.
 The tests also accept the BIOS and UEFI optical boot structures.
 
-The current flavors use minimal package selections and fixed disk budgets.
-They require new installation evidence after those changes.
-Installation evidence from earlier package selections does not cover the current images.
+All three current minimal flavors complete installation on fixed 32 GB encrypted LVM disks.
+The server and laptop complete BIOS installation.
+The workstation completes UEFI installation.
+
+Each installer reports the completion marker after its post-installation scripts.
+The scripts use a separate administrator identity and explicit audit and SELinux dependencies.
+The installer tests do not prove that the CIS assessment passes.
 
 ## Content identity
 

@@ -1,6 +1,21 @@
 {
   "profile": "xccdf_org.ssgproject.content_profile_cis",
-  "packages": ["openssh-server"],
-  "exclude": ["NetworkManager-wifi", "NetworkManager-bluetooth", "bluez", "bluez-obexd", "wpa_supplicant", "ModemManager", "gdm", "gnome-shell", "cups", "avahi", "linux-firmware"],
+  "packages": [
+    "openssh-server"
+  ],
+  "exclude": [
+    "NetworkManager-wifi",
+    "NetworkManager-bluetooth",
+    "bluez",
+    "bluez-obexd",
+    "wpa_supplicant",
+    "ModemManager",
+    "gdm",
+    "gnome-shell",
+    "cups",
+    "avahi",
+    "linux-firmware",
+    "postfix"
+  ],
   "desktop": false
 }

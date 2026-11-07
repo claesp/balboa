@@ -3,6 +3,7 @@
 Every flavor starts with mandatory packages from the `core` group.
 The installer excludes weak dependencies and default group additions.
 A weak dependency is an optional package relationship.
+All flavors exclude the Postfix mail agent.
 
 The common security tools support the required hardening and assessment workflow.
 They include OpenSCAP, AIDE, audit, SELinux support, and the firewall.

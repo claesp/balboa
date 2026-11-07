@@ -10,8 +10,9 @@ import xml.etree.ElementTree as ET
 
 from balboa.cli import checksum_entry
 from balboa.render import render_text, valid_site
-from balboa.vm import extract_evidence, inspect_system, observe
+from balboa.vm import decode_evidence, extract_evidence, inspect_system, observe
 from balboa.storage import layout
+from balboa.policy import EXCLUSIONS, tailoring
 from guest.result_gate import assess, NS
 
 PROFILE = "xccdf_org.ssgproject.content_profile_cis"
@@ -111,6 +112,16 @@ class PipelineTests(unittest.TestCase):
             with self.subTest(size=size), self.assertRaises(ValueError):
                 layout(size)
 
+    def test_tailoring_changes_only_the_declared_vendor_and_mail_rules(self):
+        profile_id, text = tailoring("server", PROFILE)
+        root = ET.fromstring(text)
+        profile = root.find("x:Profile", NS)
+        self.assertEqual(profile.get("extends"), PROFILE)
+        self.assertEqual(profile.get("id"), profile_id)
+        selections = profile.findall("x:select", NS)
+        self.assertEqual({s.get("idref") for s in selections}, {"xccdf_org.ssgproject.content_rule_" + r for r in EXCLUSIONS})
+        self.assertTrue(all(s.get("selected") == "false" for s in selections))
+
     def test_gate_rejects_wrong_platform_empty_and_small_reports(self):
         for values in ([], ["notapplicable"] * 400, ["pass"] * 99):
             with self.subTest(values=len(values)), self.assertRaises(ValueError):
@@ -158,6 +169,19 @@ class PipelineTests(unittest.TestCase):
         extract_evidence(self.archive("evidence/summary.json"), self.root / "collected")
         self.assertEqual((self.root / "collected/evidence/summary.json").read_bytes(), b"test")
 
+    def test_evidence_frame_ignores_firmware_console_output(self):
+        data = self.archive("evidence/summary.json").read_bytes()
+        stream = self.root / "evidence.stream"
+        marker = b"\nBALBOA_EVIDENCE_V1\n"
+        stream.write_bytes(b"\x1b[2JUEFI console output" + marker + data)
+        decoded = self.root / "decoded.tar.gz"
+        decode_evidence(stream, decoded)
+        self.assertEqual(decoded.read_bytes(), data)
+        for content in (data, marker + b"invalid", marker + data + marker):
+            stream.write_bytes(content)
+            with self.subTest(content=len(content)), self.assertRaises(ValueError):
+                decode_evidence(stream, decoded)
+
     def test_vm_unlock_waits_for_the_encryption_prompt(self):
         program = 'import sys; print("Please enter passphrase for disk:", flush=True); sys.exit(0 if sys.stdin.readline() == "disposable\\n" else 9)'
         observe([sys.executable, "-c", program], self.root / "serial.log", 10, "disposable")
@@ -179,6 +203,7 @@ class PipelineTests(unittest.TestCase):
         (self.root / "selinux.txt").write_text("Enforcing\n")
         (self.root / "storage.txt").write_text("vda\nluks-test crypt\nsystem-root lvm\n")
         (self.root / "sshd.txt").write_text("active\n")
+        (self.root / "native-final.json").write_text('{"passed": true}\n')
         return {"flavor": "server", "storage": plan}, {"exclude": ["bluez", "NetworkManager-wifi"]}
 
     def test_guest_evidence_rejects_unrestricted_temporary_mounts(self):
@@ -209,7 +234,7 @@ class PipelineTests(unittest.TestCase):
         content.mkdir()
         (content / "ssg-rl10-ds.xml").touch()
         config = self.root / "image.conf"
-        config.write_text(f"PROFILE={PROFILE}\nLAB=no\nFLAVOR=workstation\n")
+        config.write_text(f"PROFILE={PROFILE}\nBASE_PROFILE={PROFILE}\nLAB=no\nFLAVOR=workstation\n")
         replacements = {"/etc/balboa/image.conf": str(config), "/var/lib/balboa": str(state),
                         "/usr/local/libexec/balboa": str(guest), "/var/lib/aide": str(aide),
                         "/usr/share/xml/scap/ssg/content": str(content)}
@@ -218,6 +243,7 @@ class PipelineTests(unittest.TestCase):
             for old, new in replacements.items():
                 text = text.replace(old, new)
             (guest / name).write_text(text)
+        (guest / "native_checks.py").write_text('print("{\\"passed\\": true}")\n')
         fixture = self.report(["pass"] * 100 + ["fail"])
         programs = self.root / "bin"
         programs.mkdir()
