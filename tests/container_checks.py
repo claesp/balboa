@@ -6,6 +6,8 @@ import sys
 import tempfile
 import xml.etree.ElementTree as ET
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
 
 def main():
     subprocess.run(["ksvalidator", "-v", "RHEL10", sys.argv[1]], check=True)
