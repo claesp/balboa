@@ -70,6 +70,7 @@ def render_text(flavor, site, disk, kind, lab=False, passphrase=None, disk_gb=No
     profile_id, tailoring_xml = tailoring(flavor, definition["profile"])
     files += file_fragment("/etc/balboa/tailoring.xml", tailoring_xml)
     native = {"key_fingerprint": json.loads((ROOT / "sources.lock.json").read_text())["key_fingerprint"],
+              "key_fingerprints": json.loads((ROOT / "sources.lock.json").read_text())["rpm_key_fingerprints"],
               "excluded_packages": definition["exclude"]}
     files += file_fragment("/etc/balboa/native-policy.json", json.dumps(native))
     conf = (f"FLAVOR={flavor}\nBASE_PROFILE={definition['profile']}\nPROFILE={profile_id}\nADMIN_USER={site['username']}\n"

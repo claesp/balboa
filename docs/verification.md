@@ -1,12 +1,12 @@
 # Verification record
 
-The test date is November 7, 2026.
+The test session covers November 7 and November 8, 2026.
 The build host uses x86_64 Linux with QEMU, Podman, and KVM.
 The source media is the authenticated Rocky Linux 10.2 boot ISO.
 
 ## Completed tests
 
-The local suite contains 18 passing tests.
+The local suite contains 19 passing tests.
 It includes site input restrictions, report assessment, guest archive restrictions, and expected OpenSCAP exit handling.
 The suite also tests the serial unlock procedure and installer error detection.
 

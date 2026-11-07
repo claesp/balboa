@@ -47,7 +47,8 @@ rsyslog
 sudo
 tar
 gzip
-gnupg2
+sequoia-sq
+rocky-gpg-keys
 -telnet
 -rsh
 -tftp

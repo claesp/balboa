@@ -24,7 +24,19 @@ useradd --uid 1000 balboasmoke
 install -d /etc/balboa /usr/local/libexec/balboa
 cp /workspace/guest/*.sh /usr/local/libexec/balboa/
 printf 'FLAVOR=%s\nADMIN_USER=balboasmoke\nDESKTOP=%s\nLAB=no\n' "$flavor" "$desktop" > /etc/balboa/image.conf
+python3 - "$flavor" <<'PY'
+import json
+from pathlib import Path
+import sys
+definition = json.loads(Path('/workspace/flavors', sys.argv[1] + '.json').read_text())
+Path('/etc/balboa/native-policy.json').write_text(json.dumps({'excluded_packages': definition['exclude']}))
+PY
 bash /workspace/guest/baseline.sh
 test -f /etc/audit/rules.d/60-balboa.rules
 visudo -cf /etc/sudoers
+runuser -u balboasmoke -- test -r /etc/profile.d/60-balboa.sh
+if [[ "$desktop" == yes ]]; then
+    runuser -u balboasmoke -- test -r /etc/dconf/profile/user
+    runuser -u balboasmoke -- test -r /etc/dconf/db/local
+fi
 printf 'The minimal post-installation script passed for %s.\n' "$flavor"

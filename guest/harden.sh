@@ -16,19 +16,26 @@ sha256sum "$ds" > "$out/datastream.sha256"
 cp /etc/balboa/image.conf "$out/image.conf"
 oscap info "$ds" > "$out/content.txt"
 rc=0
+(
+umask 022
 oscap xccdf eval --remediate --tailoring-file /etc/balboa/tailoring.xml --profile "$PROFILE" \
     --results "$out/remediation.xml" --results-arf "$out/remediation-arf.xml" \
-    --report "$out/remediation.html" "$ds" || rc=$?
+    --report "$out/remediation.html" "$ds"
+) || rc=$?
 [[ "$rc" == 0 || "$rc" == 2 ]]
 python3 /usr/local/libexec/balboa/result_gate.py "$out/remediation.xml" \
     --profile "$PROFILE" --allow-findings > "$out/remediation-summary.json"
 python3 /usr/local/libexec/balboa/native_checks.py > "$out/native-after.json"
-aide --init
-mv /var/lib/aide/aide.db.new.gz /var/lib/aide/aide.db.gz
+if [[ "$DESKTOP" == yes ]]; then
+    find /etc/dconf/db -maxdepth 1 -type f -exec chmod 0644 {} +
+fi
 if [[ "$FLAVOR" == server ]]; then
     firewall-cmd --permanent --zone=drop --add-service=ssh
     systemctl enable sshd.service
 fi
+grep -qxF '!/var/lib/balboa' /etc/aide.conf || printf '\n!/var/lib/balboa\n' >> /etc/aide.conf
+aide --init
+mv /var/lib/aide/aide.db.new.gz /var/lib/aide/aide.db.gz
 touch "$state/remediated"
 if [[ "$LAB" == yes ]]; then
     printf '\nBALBOA_REMEDIATION_COMPLETE\n' > /dev/ttyS0

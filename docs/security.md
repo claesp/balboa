@@ -29,6 +29,9 @@ The project does not substitute a RHEL datastream when Rocky content is absent.
 The packaged Rocky datastream contains a rule that expects Red Hat signing keys.
 Balboa replaces `ensure_redhat_gpgkey_installed` with a native Rocky signing-key assessment.
 That assessment requires the pinned Rocky fingerprint in both the key file and RPM database.
+Sequoia reads the key formats that Rocky Linux 10.2 supplies.
+The source lock also lists the permitted fingerprints for the distribution key bundle.
+The native assessment rejects additional keys outside that list.
 
 Balboa also excludes `package_postfix_installed` to obey the requested minimal package scope.
 All flavors forbid the Postfix package through a separate package assessment.
@@ -82,6 +85,10 @@ Remediation is an automatic change that addresses a security rule.
 The system initializes the AIDE database after remediation.
 AIDE records file contents for later comparison.
 The system then requests a restart.
+
+The AIDE baseline includes the completed SSH and firewall configuration.
+It excludes the changing assessment files under `/var/lib/balboa/`.
+The security programs and their configuration remain within the normal AIDE coverage.
 
 After restart, the system does an assessment without remediation.
 The assessment retains XML results and an HTML report.

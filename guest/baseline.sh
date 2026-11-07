@@ -1,6 +1,22 @@
 #!/bin/bash
 set -euo pipefail
 source /etc/balboa/image.conf
+python3 - <<'PY'
+import configparser
+import json
+from pathlib import Path
+path = Path('/etc/dnf/dnf.conf')
+configuration = configparser.ConfigParser(interpolation=None)
+configuration.read(path)
+if not configuration.has_section('main'):
+    configuration.add_section('main')
+configuration['main']['install_weak_deps'] = 'False'
+configuration['main']['gpgcheck'] = 'True'
+configuration['main']['excludepkgs'] = ' '.join(json.loads(Path('/etc/balboa/native-policy.json').read_text())['excluded_packages'])
+with path.open('w') as output:
+    configuration.write(output)
+path.chmod(0o644)
+PY
 if (( $(id -u "$ADMIN_USER") < 1000 )); then
     printf 'The administrator account uses a reserved system identity.\n' >&2
     exit 1
@@ -51,6 +67,7 @@ umask 027
 readonly TMOUT=900
 export TMOUT
 EOF
+chmod 0644 /etc/profile.d/60-balboa.sh
 cat > /etc/sudoers.d/60-balboa <<'EOF'
 Defaults use_pty
 Defaults logfile="/var/log/sudo.log"
@@ -102,6 +119,8 @@ EOF
     printf 'user-db:user\nsystem-db:local\n' > /etc/dconf/profile/gdm
     printf '/org/gnome/desktop/session/idle-delay\n/org/gnome/desktop/screensaver/lock-enabled\n/org/gnome/desktop/screensaver/lock-delay\n' > /etc/dconf/db/local.d/locks/00-balboa
     dconf update
+    chmod 0644 /etc/dconf/profile/user /etc/dconf/profile/gdm \
+        /etc/dconf/db/local.d/00-balboa /etc/dconf/db/local.d/locks/00-balboa /etc/dconf/db/local
 fi
 if [[ "$FLAVOR" == laptop ]]; then
     systemctl enable bluetooth.service tuned.service tuned-ppd.service

@@ -14,6 +14,7 @@ from balboa.vm import decode_evidence, extract_evidence, inspect_system, observe
 from balboa.storage import layout
 from balboa.policy import EXCLUSIONS, tailoring
 from guest.result_gate import assess, NS
+from guest.native_checks import validate_fingerprints
 
 PROFILE = "xccdf_org.ssgproject.content_profile_cis"
 
@@ -51,6 +52,14 @@ class PipelineTests(unittest.TestCase):
         for text in (entry * 2, entry.replace("image.iso", "other.iso"), ""):
             with self.subTest(text=text), self.assertRaises(ValueError):
                 checksum_entry(text, "image.iso")
+
+    def test_native_trust_requires_the_pinned_key_and_rejects_unknown_keys(self):
+        policy = {"key_fingerprint": "A" * 40, "key_fingerprints": ["A" * 40, "B" * 64]}
+        validate_fingerprints({"A" * 40}, policy)
+        validate_fingerprints({"A" * 40, "B" * 64}, policy)
+        for observed in (set(), {"B" * 64}, {"A" * 40, "C" * 40}):
+            with self.subTest(observed=observed), self.assertRaises(ValueError):
+                validate_fingerprints(observed, policy)
 
     def test_site_rejects_kickstart_and_shell_injection(self):
         for field in self.site:
@@ -234,8 +243,9 @@ class PipelineTests(unittest.TestCase):
         content.mkdir()
         (content / "ssg-rl10-ds.xml").touch()
         config = self.root / "image.conf"
-        config.write_text(f"PROFILE={PROFILE}\nBASE_PROFILE={PROFILE}\nLAB=no\nFLAVOR=workstation\n")
+        config.write_text(f"PROFILE={PROFILE}\nBASE_PROFILE={PROFILE}\nLAB=no\nFLAVOR=workstation\nDESKTOP=no\n")
         replacements = {"/etc/balboa/image.conf": str(config), "/var/lib/balboa": str(state),
+                        "/etc/aide.conf": str(self.root / "aide.conf"),
                         "/usr/local/libexec/balboa": str(guest), "/var/lib/aide": str(aide),
                         "/usr/share/xml/scap/ssg/content": str(content)}
         for name in ("harden.sh", "audit.sh", "failure.sh", "result_gate.py"):
@@ -243,6 +253,7 @@ class PipelineTests(unittest.TestCase):
             for old, new in replacements.items():
                 text = text.replace(old, new)
             (guest / name).write_text(text)
+        (self.root / "aide.conf").touch()
         (guest / "native_checks.py").write_text('print("{\\"passed\\": true}")\n')
         fixture = self.report(["pass"] * 100 + ["fail"])
         programs = self.root / "bin"
