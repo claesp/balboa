@@ -90,6 +90,8 @@ def vm(args):
         raise ValueError("Lab credentials cannot unlock a production installation.")
     if not manifest["lab"]:
         raise ValueError("The automated VM command requires disposable lab media. Use the manual procedure for production media.")
+    if args.phase == "boot" and args.lab_secrets is None:
+        raise ValueError("Set --lab-secrets to unlock the encrypted test disk.")
     if args.timeout < 60:
         raise ValueError("The VM time limit must be at least 60 seconds.")
     work = args.workdir.resolve()
@@ -101,7 +103,7 @@ def vm(args):
     if args.phase == "install":
         if disk.exists() or identity.exists():
             raise ValueError("The VM disk exists. Select a new VM directory.")
-        run(["qemu-img", "create", "-f", "qcow2", disk, "80G"])
+        run(["qemu-img", "create", "-f", "qcow2", disk, str(manifest["storage"]["disk_bytes"])])
         identity.write_text(json.dumps(expected) + "\n")
     elif not disk.is_file() or json.loads(identity.read_text()) != expected:
         raise ValueError("The VM disk identity does not match the image and firmware.")

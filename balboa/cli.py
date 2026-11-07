@@ -161,6 +161,7 @@ def parser():
     generate.add_argument("--kind", choices=("boot", "dvd"), default="boot")
     generate.add_argument("--output", type=Path, required=True)
     generate.add_argument("--disk", help="The only disk that the installer can erase.")
+    generate.add_argument("--disk-size-gb", type=int, help="Fixed disk budget in decimal GB. Defaults: production 128, lab 32.")
     auth = generate.add_mutually_exclusive_group(required=True)
     auth.add_argument("--site", type=Path)
     auth.add_argument("--lab", action="store_true", help="Generate disposable VM credentials for vda.")

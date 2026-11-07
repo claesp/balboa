@@ -1,0 +1,17 @@
+{
+  "production_disk_gb": 128,
+  "test_disk_gb": 32,
+  "minimum_disk_gb": 24,
+  "boot_reserve_mib": 2048,
+  "lvm_reserve_mib": 256,
+  "volumes": [
+    {"mount": "/", "name": "root", "minimum_mib": 8192, "weight": 28, "options": "defaults"},
+    {"mount": "/home", "name": "home", "minimum_mib": 1024, "weight": 28, "options": "nodev,nosuid"},
+    {"mount": "/tmp", "name": "tmp", "minimum_mib": 512, "weight": 4, "options": "nodev,nosuid,noexec"},
+    {"mount": "/var", "name": "var", "minimum_mib": 3072, "weight": 16, "options": "nodev,nosuid"},
+    {"mount": "/var/tmp", "name": "vartmp", "minimum_mib": 512, "weight": 4, "options": "nodev,nosuid,noexec"},
+    {"mount": "/var/log", "name": "log", "minimum_mib": 1024, "weight": 10, "options": "nodev,nosuid,noexec"},
+    {"mount": "/var/log/audit", "name": "audit", "minimum_mib": 512, "weight": 6, "options": "nodev,nosuid,noexec"},
+    {"mount": "swap", "name": "swap", "minimum_mib": 1024, "weight": 4, "options": ""}
+  ]
+}

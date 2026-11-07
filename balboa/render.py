@@ -8,6 +8,8 @@ import re
 import secrets
 import subprocess
 
+from .storage import kickstart_volumes, layout
+
 ROOT = Path(__file__).resolve().parent.parent
 
 
@@ -46,7 +48,7 @@ def file_fragment(path, content, executable=False):
     return f"install -d {Path(path).parent}\nprintf '%s' '{encoded}' | base64 -d > {path}\nchmod {mode} {path}\n"
 
 
-def render_text(flavor, site, disk, kind, lab=False, passphrase=None):
+def render_text(flavor, site, disk, kind, lab=False, passphrase=None, disk_gb=None):
     valid_site(site)
     if not re.fullmatch(r"(?:sd[a-z]+|vd[a-z]+|nvme[0-9]+n[0-9]+|disk/by-id/[A-Za-z0-9_.:+-]+)", disk or ""):
         raise ValueError("Set an explicit whole disk name or disk/by-id identifier.")
@@ -55,6 +57,7 @@ def render_text(flavor, site, disk, kind, lab=False, passphrase=None):
     if lab and not re.fullmatch(r"[A-Za-z0-9_-]{32,}", passphrase or ""):
         raise ValueError("A lab installation requires a generated encryption secret.")
     definition = json.loads((ROOT / "flavors" / f"{flavor}.json").read_text())
+    storage = layout(disk_gb, lab)
     files = ""
     for name in ("baseline.sh", "harden.sh", "audit.sh", "failure.sh", "export.sh", "result_gate.py"):
         files += file_fragment("/usr/local/libexec/balboa/" + name, (ROOT / "guest" / name).read_text(), True)
@@ -72,7 +75,8 @@ def render_text(flavor, site, disk, kind, lab=False, passphrase=None):
                    "CONSOLE": "console=tty0 console=ttyS0,115200n8" if lab else "",
                    "PASSPHRASE": f' --passphrase="{passphrase}"' if lab else "",
                    "DISPLAY": "xconfig --startxonboot" if definition["desktop"] else "skipx",
-                   "PACKAGES": "\n".join(definition["packages"]), "FILES": files})
+                   "PV_MIB": str(storage["pv_mib"]), "VOLUMES": kickstart_volumes(storage),
+                   "PACKAGES": "\n".join(definition["packages"] + ["-" + p for p in definition["exclude"]]), "FILES": files})
     text = (ROOT / "kickstarts/base.ks.in").read_text()
     text = re.sub(r"@@([A-Z_]+)@@", lambda match: values[match[1]], text)
     if "@@" in text:
@@ -107,11 +111,12 @@ def render(args):
     else:
         site = json.loads(args.site.read_text())
         disk = args.disk
-    text, definition = render_text(args.flavor, site, disk, args.kind, args.lab, passphrase)
+    text, definition = render_text(args.flavor, site, disk, args.kind, args.lab, passphrase, args.disk_size_gb)
     path = output / "installation.ks"
     path.write_text(text)
     metadata = {"flavor": args.flavor, "profile": definition["profile"], "lab": args.lab,
                 "disk": disk, "source_kind": args.kind,
+                "storage": layout(args.disk_size_gb, args.lab),
                 "kickstart_sha256": hashlib.sha256(text.encode()).hexdigest()}
     path.with_suffix(".json").write_text(json.dumps(metadata, indent=2) + "\n")
     print(path)

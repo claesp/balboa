@@ -1,5 +1,6 @@
 {
   "profile": "xccdf_org.ssgproject.content_profile_cis_workstation_l2",
-  "packages": ["@^workstation-product-environment", "firefox"],
+  "packages": ["gdm", "gnome-shell", "gnome-session", "gnome-settings-daemon", "gnome-control-center", "nautilus", "ptyxis", "gnome-keyring", "gnome-keyring-pam", "amd-gpu-firmware", "intel-gpu-firmware"],
+  "exclude": ["openssh-server", "NetworkManager-wifi", "NetworkManager-bluetooth", "bluez", "bluez-obexd", "wpa_supplicant", "ModemManager", "cups", "avahi"],
   "desktop": true
 }

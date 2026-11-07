@@ -29,6 +29,8 @@ def main():
             base.conf.cachedir = temporary
             base.conf.persistdir = temporary
             base.conf.logdir = temporary
+            base.conf.install_weak_deps = False
+            base.conf.excludepkgs = parser.handler.packages.excludedList
             for repository, directory in (("baseos", "BaseOS"), ("appstream", "AppStream")):
                 base.repos.add_new_repo(repository, base.conf,
                                         baseurl=[f"https://dl.rockylinux.org/pub/rocky/10/{directory}/x86_64/os/"])
@@ -37,13 +39,16 @@ def main():
             for package in parser.handler.packages.packageList:
                 if not base.sack.query().available().filter(name=package):
                     raise ValueError(f"The official repositories do not contain {package}.")
+                base.install(package)
             environment = parser.handler.packages.environment
             if environment and not base.comps.environment_by_pattern(environment):
                 raise ValueError(f"The official repositories do not contain {environment}.")
             for group in parser.handler.packages.groupList:
                 if not base.comps.group_by_pattern(group.name):
                     raise ValueError(f"The official repositories do not contain {group.name}.")
-        print("The selected packages and environments exist in the official repositories.")
+                base.group_install(group.name, ("mandatory",))
+            base.resolve()
+        print("The selected packages and dependencies resolve in the official repositories.")
     print("Kickstart syntax, shell syntax, and Rocky CIS Level 2 profile tests passed.")
 
 

@@ -99,7 +99,7 @@ EOF
     dconf update
 fi
 if [[ "$FLAVOR" == laptop ]]; then
-    systemctl enable tuned.service tuned-ppd.service
+    systemctl enable bluetooth.service tuned.service tuned-ppd.service
 fi
 # Network access requires operator firewall rules after installation.
 firewall-offline-cmd --set-default-zone=drop

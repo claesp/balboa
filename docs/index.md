@@ -37,6 +37,9 @@ Balboa retains signature files in `cache/`.
 [Security policy](security.md) describes the controls and release conditions.
 [Testing](testing.md) describes Podman and QEMU tests.
 [Maintenance](maintenance.md) describes source and policy changes.
+[Verification record](verification.md) records completed tests and release evidence.
+[Minimal flavors](flavors.md) describes package selection and hardware services.
+[Fixed storage](storage.md) describes disk sizes, LVM, and mount restrictions.
 
 ## Source references
 

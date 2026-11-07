@@ -53,7 +53,8 @@ Do not install lab media on production hardware.
 
 The example uses the server flavor and BIOS firmware.
 The ISO command inspects the embedded Kickstart and both optical boot entries.
-The QEMU command creates a new 80 GiB virtual disk.
+The QEMU command creates a new fixed-size virtual disk from the manifest.
+The default lab disk contains 32 GB.
 
 ```sh
 python3 -m balboa iso build/server/installation.ks --output build/balboa-server-lab.iso

@@ -18,20 +18,14 @@ ignoredisk --only-use=@@DISK@@
 zerombr
 clearpart --all --initlabel --drives=@@DISK@@
 reqpart --add-boot
-part pv.01 --size=1 --grow --ondisk=@@DISK@@ --encrypted --luks-version=luks2@@PASSPHRASE@@
+part pv.01 --size=@@PV_MIB@@ --ondisk=@@DISK@@ --encrypted --luks-version=luks2@@PASSPHRASE@@
 volgroup system pv.01
-logvol / --vgname=system --name=root --fstype=xfs --size=16384 --grow
-logvol /home --vgname=system --name=home --fstype=xfs --size=4096 --fsoptions="nodev,nosuid"
-logvol /tmp --vgname=system --name=tmp --fstype=xfs --size=4096 --fsoptions="nodev,nosuid,noexec"
-logvol /var --vgname=system --name=var --fstype=xfs --size=8192 --fsoptions="nodev,nosuid"
-logvol /var/tmp --vgname=system --name=vartmp --fstype=xfs --size=4096 --fsoptions="nodev,nosuid,noexec"
-logvol /var/log --vgname=system --name=log --fstype=xfs --size=4096 --fsoptions="nodev,nosuid,noexec"
-logvol /var/log/audit --vgname=system --name=audit --fstype=xfs --size=2048 --fsoptions="nodev,nosuid,noexec"
-logvol swap --vgname=system --name=swap --fstype=swap --size=2048
+@@VOLUMES@@
 @@DISPLAY@@
 poweroff
 
-%packages --excludedocs
+%packages --excludedocs --exclude-weakdeps
+@core --nodefaults
 @@PACKAGES@@
 audit
 aide
@@ -44,7 +38,6 @@ scap-security-guide
 python3
 rsyslog
 sudo
-tmux
 -telnet
 -rsh
 -tftp

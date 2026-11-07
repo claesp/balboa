@@ -11,6 +11,7 @@ Use these locations for changes:
 - `sources.lock.json` contains official media identities and the container digest.
 - `flavors/` contains package selections and security profile identifiers.
 - `kickstarts/` contains the common installation template.
+- `storage/` contains fixed disk sizes and the LVM allocation policy.
 - `guest/` contains the installed hardening and assessment programs.
 - `balboa/` contains the commands for builds and tests.
 - `tests/` contains tests for security boundaries and image contents.
@@ -28,6 +29,7 @@ Record package and policy decisions in `docs/`.
 
 Package names belong in the `packages` array.
 Environment groups use the Kickstart `@^` prefix.
+The default flavors deliberately avoid full desktop environment groups.
 Common packages belong in `kickstarts/base.ks.in`.
 
 After a change, use a new output directory.

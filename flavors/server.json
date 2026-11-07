@@ -1,5 +1,6 @@
 {
   "profile": "xccdf_org.ssgproject.content_profile_cis",
-  "packages": ["@^minimal-environment", "openssh-server"],
+  "packages": ["openssh-server"],
+  "exclude": ["NetworkManager-wifi", "NetworkManager-bluetooth", "bluez", "bluez-obexd", "wpa_supplicant", "ModemManager", "gdm", "gnome-shell", "cups", "avahi", "linux-firmware"],
   "desktop": false
 }

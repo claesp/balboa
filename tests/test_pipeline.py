@@ -11,6 +11,7 @@ import xml.etree.ElementTree as ET
 from balboa.cli import checksum_entry
 from balboa.render import render_text, valid_site
 from balboa.vm import extract_evidence, observe
+from balboa.storage import layout
 from guest.result_gate import assess, NS
 
 PROFILE = "xccdf_org.ssgproject.content_profile_cis"
@@ -86,7 +87,27 @@ class PipelineTests(unittest.TestCase):
                     expected = PROFILE if flavor == "server" else PROFILE + "_workstation_l2"
                     self.assertEqual(definition["profile"], expected)
                     self.assertEqual("\ncdrom\n" in text, kind == "dvd")
-                    self.assertEqual("NetworkManager-wifi" in text, flavor == "laptop")
+                    self.assertEqual("\nNetworkManager-wifi\n" in text, flavor == "laptop")
+                    self.assertIn("@core --nodefaults", text)
+                    self.assertNotIn("@^", text)
+                    self.assertIn("--exclude-weakdeps", text)
+                    self.assertNotIn("--grow", text)
+
+    def test_storage_has_fixed_sizes_and_identical_test_mounts(self):
+        production = layout()
+        lab = layout(lab=True)
+        self.assertEqual(production["disk_bytes"], 128_000_000_000)
+        self.assertEqual(lab["disk_bytes"], 32_000_000_000)
+        self.assertEqual([v["mount"] for v in production["volumes"]], [v["mount"] for v in lab["volumes"]])
+        for plan in (production, lab, layout(24), layout(256)):
+            self.assertEqual(sum(v["size_mib"] for v in plan["volumes"]), plan["pv_mib"] - plan["lvm_reserve_mib"])
+            for volume in plan["volumes"]:
+                self.assertGreaterEqual(volume["size_mib"], volume["minimum_mib"])
+                if volume["mount"] in ("/tmp", "/var/tmp", "/var/log", "/var/log/audit"):
+                    self.assertEqual(set(volume["options"].split(",")), {"nodev", "nosuid", "noexec"})
+        for size in (True, 0, 16, -1, "128", 20000):
+            with self.subTest(size=size), self.assertRaises(ValueError):
+                layout(size)
 
     def test_gate_rejects_wrong_platform_empty_and_small_reports(self):
         for values in ([], ["notapplicable"] * 400, ["pass"] * 99):
@@ -158,7 +179,7 @@ class PipelineTests(unittest.TestCase):
         content.mkdir()
         (content / "ssg-rl10-ds.xml").touch()
         config = self.root / "image.conf"
-        config.write_text(f"PROFILE={PROFILE}\nLAB=no\n")
+        config.write_text(f"PROFILE={PROFILE}\nLAB=no\nFLAVOR=workstation\n")
         replacements = {"/etc/balboa/image.conf": str(config), "/var/lib/balboa": str(state),
                         "/usr/local/libexec/balboa": str(guest), "/var/lib/aide": str(aide),
                         "/usr/share/xml/scap/ssg/content": str(content)}

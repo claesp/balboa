@@ -45,7 +45,7 @@ Audit rules record account changes and administrator policy changes.
 The initial firewall uses the `drop` zone.
 
 The images disable sshd at installation.
-The images do not open inbound service ports.
+The server enables public key SSH access after successful remediation.
 SSH configuration permits public key authentication and rejects root login.
 
 GNOME locks the workstation and laptop after 15 minutes without user activity.
@@ -71,7 +71,8 @@ The assessment fails for failed, unknown, untested, erroneous, or unreassessed f
 The remediation stage permits unresolved findings but rejects scanner errors.
 The remediation marker does not indicate conformance.
 
-Balboa does not enable remote access after a failed assessment.
+Server SSH can operate while the release assessment reports findings.
+Restrict staging access until the security owner accepts the release evidence.
 The administrator can use the local console to examine results.
 The administrator controls each later firewall change.
 
@@ -92,8 +93,8 @@ OpenSCAP does not cover all organizational controls.
 Site decisions include time sources, remote logging, firmware protection, and physical access.
 The operator must supply these decisions before release.
 
-The generated partition layout requires at least 64 GiB.
-The QEMU procedure uses an 80 GiB disk.
+The production layout uses a fixed 128 GB budget.
+The default QEMU procedure uses a 32 GB disk with the same filesystem scheme.
 The fixed log sizes require a capacity review for production workloads.
 
 ## Laptop decisions

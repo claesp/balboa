@@ -23,6 +23,10 @@ python3 /usr/local/libexec/balboa/result_gate.py "$out/remediation.xml" \
     --profile "$PROFILE" --allow-findings > "$out/remediation-summary.json"
 aide --init
 mv /var/lib/aide/aide.db.new.gz /var/lib/aide/aide.db.gz
+if [[ "$FLAVOR" == server ]]; then
+    firewall-cmd --permanent --zone=drop --add-service=ssh
+    systemctl enable sshd.service
+fi
 touch "$state/remediated"
 if [[ "$LAB" == yes ]]; then
     printf '\nBALBOA_REMEDIATION_COMPLETE\n' > /dev/ttyS0
