@@ -92,7 +92,9 @@ def tools_build(args):
 
 def container(argv, mounts=(), network="none", capture_output=False):
     command = ["podman", "run", "--rm", "--network", network, "--cap-drop=all",
-               "--security-opt=no-new-privileges", "--userns=keep-id", "--user", str(os.getuid())]
+               "--security-opt=no-new-privileges", "--user", str(os.getuid())]
+    if os.getuid() != 0:
+        command += ["--userns=keep-id"]
     for host, guest, mode in mounts:
         command += ["-v", f"{Path(host).resolve()}:{guest}:{mode}"]
     return run(command + [TOOLS] + list(argv), capture_output=capture_output, text=True)
