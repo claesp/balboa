@@ -100,8 +100,11 @@ def container(argv, mounts=(), network="none", capture_output=False):
 
 def validate(args):
     ks = args.kickstart.resolve()
-    container(["python3", "/workspace/tests/container_checks.py", "/input/" + ks.name],
-              [(ROOT, "/workspace", "ro"), (ks.parent, "/input", "ro")])
+    command = ["python3", "/workspace/tests/container_checks.py", "/input/" + ks.name]
+    if getattr(args, "packages", False):
+        command += ["--packages"]
+    container(command, [(ROOT, "/workspace", "ro"), (ks.parent, "/input", "ro")],
+              network="slirp4netns" if getattr(args, "packages", False) else "none")
 
 
 def iso(args):
@@ -164,6 +167,7 @@ def parser():
     generate.set_defaults(func=render)
     syntax = commands.add_parser("validate", help="Do syntax and security-content tests in Podman.")
     syntax.add_argument("kickstart", type=Path)
+    syntax.add_argument("--packages", action="store_true", help="Also query official package repositories.")
     syntax.set_defaults(func=validate)
     media = commands.add_parser("iso", help="Embed a Kickstart into official media.")
     media.add_argument("kickstart", type=Path)

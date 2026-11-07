@@ -4,12 +4,13 @@ from pathlib import Path
 import tarfile
 import tempfile
 import subprocess
+import sys
 import unittest
 import xml.etree.ElementTree as ET
 
 from balboa.cli import checksum_entry
 from balboa.render import render_text, valid_site
-from balboa.vm import extract_evidence
+from balboa.vm import extract_evidence, observe
 from guest.result_gate import assess, NS
 
 PROFILE = "xccdf_org.ssgproject.content_profile_cis"
@@ -133,6 +134,16 @@ class PipelineTests(unittest.TestCase):
     def test_guest_archive_extracts_only_under_target(self):
         extract_evidence(self.archive("evidence/summary.json"), self.root / "collected")
         self.assertEqual((self.root / "collected/evidence/summary.json").read_bytes(), b"test")
+
+    def test_vm_unlock_waits_for_the_encryption_prompt(self):
+        program = 'import sys; print("Please enter passphrase for disk:", flush=True); sys.exit(0 if sys.stdin.readline() == "disposable\\n" else 9)'
+        observe([sys.executable, "-c", program], self.root / "serial.log", 10, "disposable")
+        self.assertNotIn("disposable", (self.root / "serial.log").read_text())
+
+    def test_vm_rejects_an_installer_failure(self):
+        program = 'print("Non interactive installation failed: missing package", flush=True)'
+        with self.assertRaises(ValueError):
+            observe([sys.executable, "-c", program], self.root / "serial.log", 10, None)
 
     def test_first_boot_retains_findings_then_rejects_assessment(self):
         # Exercise the real service scripts without changing the host system.

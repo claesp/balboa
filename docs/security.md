@@ -50,6 +50,7 @@ SSH configuration permits public key authentication and rejects root login.
 
 GNOME locks the workstation and laptop after 15 minutes without user activity.
 The laptop includes wireless firmware and power management packages.
+Rocky Linux 10 uses `tuned-ppd` for the GNOME power interface.
 The selected CIS profile can disable wireless interfaces.
 
 ## Installation sequence
@@ -149,3 +150,4 @@ Profile content can change when the installed package changes.
 - [OpenSCAP security content](https://www.open-scap.org/security-policies/scap-security-guide/)
 - [Upstream server profile](https://github.com/ComplianceAsCode/content/blob/master/products/rhel10/profiles/cis.profile)
 - [Upstream workstation profile](https://github.com/ComplianceAsCode/content/blob/master/products/rhel10/profiles/cis_workstation_l2.profile)
+- [Rocky Linux 10 package changes](https://docs.rockylinux.org/latest/releases/release_notes/10_0/)

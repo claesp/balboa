@@ -3,6 +3,7 @@
 from pathlib import Path
 import subprocess
 import sys
+import tempfile
 import xml.etree.ElementTree as ET
 
 
@@ -17,6 +18,32 @@ def main():
         profile = root.find(f".//x:Profile[@id='xccdf_org.ssgproject.content_profile_{suffix}']", ns)
         if profile is None or title not in profile.findtext("x:title", namespaces=ns):
             raise ValueError(f"The Rocky datastream does not contain {title}.")
+    if "--packages" in sys.argv:
+        import dnf
+        from pykickstart.parser import KickstartParser
+        from pykickstart.version import makeVersion
+
+        parser = KickstartParser(makeVersion("RHEL10"))
+        parser.readKickstart(sys.argv[1])
+        with tempfile.TemporaryDirectory() as temporary, dnf.Base() as base:
+            base.conf.cachedir = temporary
+            base.conf.persistdir = temporary
+            base.conf.logdir = temporary
+            for repository, directory in (("baseos", "BaseOS"), ("appstream", "AppStream")):
+                base.repos.add_new_repo(repository, base.conf,
+                                        baseurl=[f"https://dl.rockylinux.org/pub/rocky/10/{directory}/x86_64/os/"])
+            base.fill_sack(load_system_repo=False)
+            base.read_comps()
+            for package in parser.handler.packages.packageList:
+                if not base.sack.query().available().filter(name=package):
+                    raise ValueError(f"The official repositories do not contain {package}.")
+            environment = parser.handler.packages.environment
+            if environment and not base.comps.environment_by_pattern(environment):
+                raise ValueError(f"The official repositories do not contain {environment}.")
+            for group in parser.handler.packages.groupList:
+                if not base.comps.group_by_pattern(group.name):
+                    raise ValueError(f"The official repositories do not contain {group.name}.")
+        print("The selected packages and environments exist in the official repositories.")
     print("Kickstart syntax, shell syntax, and Rocky CIS Level 2 profile tests passed.")
 
 
