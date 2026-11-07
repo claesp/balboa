@@ -56,7 +56,7 @@ def render_text(flavor, site, disk, kind, lab=False, passphrase=None):
         raise ValueError("A lab installation requires a generated encryption secret.")
     definition = json.loads((ROOT / "flavors" / f"{flavor}.json").read_text())
     files = ""
-    for name in ("baseline.sh", "harden.sh", "audit.sh", "failure.sh", "result_gate.py"):
+    for name in ("baseline.sh", "harden.sh", "audit.sh", "failure.sh", "export.sh", "result_gate.py"):
         files += file_fragment("/usr/local/libexec/balboa/" + name, (ROOT / "guest" / name).read_text(), True)
     for name in ("balboa-harden.service", "balboa-audit.service"):
         files += file_fragment("/etc/systemd/system/" + name, (ROOT / "guest" / name).read_text())

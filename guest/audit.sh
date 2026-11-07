@@ -26,7 +26,7 @@ fi
 touch "$state/assessed"
 if [[ "$LAB" == yes ]]; then
     # Export through a dedicated guest channel. No host directory is shared.
-    tar -C "$state" -czf /dev/virtio-ports/org.balboa.evidence evidence
+    bash /usr/local/libexec/balboa/export.sh
     sync
     systemctl --no-block poweroff
 fi

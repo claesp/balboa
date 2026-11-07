@@ -5,7 +5,7 @@ balboa_failure() {
     trap - ERR
     printf '%s\n' "$status" > /var/lib/balboa/evidence/service-exit-status
     if [[ "$LAB" == yes ]]; then
-        tar -C /var/lib/balboa -czf /dev/virtio-ports/org.balboa.evidence evidence || true
+        bash /usr/local/libexec/balboa/export.sh || true
         sync
         systemctl --no-block poweroff || true
     fi

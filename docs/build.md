@@ -85,6 +85,7 @@ python3 -m balboa iso build/production-server/installation.ks --output build/bal
 For workstations, replace `server` with `workstation` and use a new output directory.
 For laptops, replace `server` with `laptop` and use a new output directory.
 The renderer rejects an existing output directory that contains files.
+The boot ISO command also requires a successful package availability test.
 
 The disk parameter also accepts `disk/by-id/` identifiers.
 Use a stable identifier when disk enumeration can change.

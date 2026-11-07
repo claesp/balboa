@@ -121,7 +121,7 @@ def iso(args):
     if output.exists():
         raise ValueError("The output ISO exists. Select a new path.")
     output.parent.mkdir(parents=True, exist_ok=True)
-    validate(argparse.Namespace(kickstart=ks))
+    validate(argparse.Namespace(kickstart=ks, packages=args.kind == "boot"))
     cmdline = "console=tty0 console=ttyS0,115200n8" if metadata["lab"] else ""
     try:
         if args.native:

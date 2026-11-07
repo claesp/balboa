@@ -108,8 +108,7 @@ def vm(args):
     command = ["qemu-system-x86_64", "-machine", f"q35,accel={args.accel}",
                "-cpu", "host" if args.accel == "kvm" else "max", "-smp", "4", "-m", "4096",
                "-drive", f"file={disk},format=qcow2,if=virtio", "-nic", "user,model=virtio-net-pci",
-               "-display", "none", "-serial", "stdio", "-monitor", "none", "-no-reboot",
-               "-device", "virtio-serial-pci"]
+               "-display", "none", "-serial", "stdio", "-monitor", "none", "-no-reboot"]
     if args.firmware == "uefi":
         variables = work / "OVMF_VARS.fd"
         if args.phase == "install":
@@ -119,8 +118,7 @@ def vm(args):
     if args.phase == "install":
         command += ["-cdrom", str(iso), "-boot", "once=d"]
     archive = work / "evidence.tar.gz"
-    command += ["-chardev", f"file,id=evidence,path={archive}",
-                "-device", "virtserialport,chardev=evidence,name=org.balboa.evidence"]
+    command += ["-serial", f"file:{archive}"]
     # QEMU uses commas to separate drive and chardev properties.
     if any("," in str(p) for p in (iso, work, args.ovmf_code, args.ovmf_vars)):
         raise ValueError("QEMU paths cannot contain commas.")
