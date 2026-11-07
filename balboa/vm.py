@@ -31,7 +31,11 @@ def observe(command, log_path, timeout, passphrase):
                     log.write(data)
                     log.flush()
                     recent = (recent + data)[-4096:]
-                    if b"Non interactive installation failed:" in recent:
+                    if any(message in recent for message in (
+                        b"Non interactive installation failed:",
+                        b"Unable to allocate requested partition scheme.",
+                        b"The following mandatory spokes are not completed:",
+                    )):
                         raise ValueError(f"The installer rejected the configuration. Examine {log_path}.")
                     prompt = recent.lower()
                     if passphrase and not unlocked and b"passphrase" in prompt and b":" in prompt.split(b"passphrase")[-1]:

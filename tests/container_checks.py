@@ -46,8 +46,9 @@ def main():
             for group in parser.handler.packages.groupList:
                 if not base.comps.group_by_pattern(group.name):
                     raise ValueError(f"The official repositories do not contain {group.name}.")
-                base.group_install(group.name, ("mandatory",))
+                base.group_install(group.name, ("mandatory",), exclude=parser.handler.packages.excludedList)
             base.resolve()
+            print(f"The minimal selection resolves to {len(base.transaction.install_set)} packages.")
         print("The selected packages and dependencies resolve in the official repositories.")
     print("Kickstart syntax, shell syntax, and Rocky CIS Level 2 profile tests passed.")
 

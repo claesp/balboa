@@ -2,7 +2,8 @@
   "production_disk_gb": 128,
   "test_disk_gb": 32,
   "minimum_disk_gb": 24,
-  "boot_reserve_mib": 2048,
+  "boot_reserve_mib": 3072,
+  "boot_size_mib": 2048,
   "lvm_reserve_mib": 256,
   "volumes": [
     {"mount": "/", "name": "root", "minimum_mib": 8192, "weight": 28, "options": "defaults"},

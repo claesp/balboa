@@ -25,6 +25,7 @@ def layout(disk_gb=None, lab=False):
         result.append({**volume, "size_mib": volume["minimum_mib"] + spare * volume["weight"] // 100})
     result[0]["size_mib"] += budget - sum(v["size_mib"] for v in result)
     return {"disk_gb": disk_gb, "disk_bytes": disk_bytes, "pv_mib": pv_mib,
+            "boot_mib": policy["boot_size_mib"],
             "lvm_reserve_mib": policy["lvm_reserve_mib"], "volumes": result}
 
 

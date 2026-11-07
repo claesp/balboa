@@ -17,7 +17,8 @@ bootloader --location=mbr --boot-drive=@@DISK@@ --iscrypted --password=@@BOOTLOA
 ignoredisk --only-use=@@DISK@@
 zerombr
 clearpart --all --initlabel --drives=@@DISK@@
-reqpart --add-boot
+reqpart
+part /boot --fstype=xfs --size=@@BOOT_MIB@@ --ondisk=@@DISK@@ --fsoptions="nodev,nosuid,noexec"
 part pv.01 --size=@@PV_MIB@@ --ondisk=@@DISK@@ --encrypted --luks-version=luks2@@PASSPHRASE@@
 volgroup system pv.01
 @@VOLUMES@@

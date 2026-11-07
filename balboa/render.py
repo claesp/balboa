@@ -75,7 +75,8 @@ def render_text(flavor, site, disk, kind, lab=False, passphrase=None, disk_gb=No
                    "CONSOLE": "console=tty0 console=ttyS0,115200n8" if lab else "",
                    "PASSPHRASE": f' --passphrase="{passphrase}"' if lab else "",
                    "DISPLAY": "xconfig --startxonboot" if definition["desktop"] else "skipx",
-                   "PV_MIB": str(storage["pv_mib"]), "VOLUMES": kickstart_volumes(storage),
+                   "PV_MIB": str(storage["pv_mib"]), "BOOT_MIB": str(storage["boot_mib"]),
+                   "VOLUMES": kickstart_volumes(storage),
                    "PACKAGES": "\n".join(definition["packages"] + ["-" + p for p in definition["exclude"]]), "FILES": files})
     text = (ROOT / "kickstarts/base.ks.in").read_text()
     text = re.sub(r"@@([A-Z_]+)@@", lambda match: values[match[1]], text)

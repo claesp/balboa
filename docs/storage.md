@@ -61,11 +61,12 @@ The variable data filesystem permits package installation scripts and applicatio
 
 The installer creates the required BIOS or UEFI boot partitions outside LVM.
 The `/boot` filesystem also remains outside LVM.
+It has a fixed 2048 MiB size with `nodev,nosuid,noexec` restrictions.
 Boot filesystems remain unencrypted so that firmware and GRUB can start the system.
 
 ## Allocation method
 
-The renderer reserves 2048 MiB for boot partitions and alignment.
+The renderer reserves 3072 MiB for boot partitions and alignment.
 MiB means 1,048,576 bytes.
 The renderer reserves another 256 MiB for encryption metadata and LVM overhead.
 

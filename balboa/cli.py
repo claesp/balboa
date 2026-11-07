@@ -123,12 +123,13 @@ def iso(args):
     output.parent.mkdir(parents=True, exist_ok=True)
     validate(argparse.Namespace(kickstart=ks, packages=args.kind == "boot"))
     cmdline = "console=tty0 console=ttyS0,115200n8" if metadata["lab"] else ""
+    boot_menu = ["--replace", "set timeout=60", "set timeout=5"] if metadata["lab"] else []
     try:
         if args.native:
-            run(["mkksiso", "--ks", ks, "--cmdline", cmdline, source, output])
+            run(["mkksiso", "--ks", ks, "--cmdline", cmdline] + boot_menu + [source, output])
         else:
             container(["mkksiso", "--skip-mkefiboot", "--ks", "/input/" + ks.name,
-                       "--cmdline", cmdline, "/source/" + source.name, "/output/" + output.name],
+                       "--cmdline", cmdline] + boot_menu + ["/source/" + source.name, "/output/" + output.name],
                       [(source.parent, "/source", "ro"), (ks.parent, "/input", "ro"),
                        (output.parent, "/output", "rw")])
         container(["python3", "/workspace/tests/iso_checks.py", "/media/" + output.name, "/input/" + ks.name],
