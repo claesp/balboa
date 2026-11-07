@@ -108,6 +108,19 @@ EOF
 systemctl disable sshd.service 2>/dev/null || true
 systemctl mask kdump.service
 systemctl mask systemd-journal-remote.service systemd-journal-remote.socket
+systemctl mask rsyslog.service
+python3 - <<'PY'
+from pathlib import Path
+import re
+main = Path('/etc/rsyslog.conf')
+for path in [main, *Path('/etc/rsyslog.d').glob('*.conf')]:
+    if path.exists():
+        content = re.sub(r'^\s*\$FileCreateMode\s+.*\n?', '', path.read_text(), flags=re.MULTILINE)
+        if path == main:
+            content += '\n$FileCreateMode 0640\n'
+        path.write_text(content)
+        path.chmod(0o644)
+PY
 if [[ -f /etc/systemd/journal-upload.conf.d/60-balboa.conf ]]; then
     systemctl enable systemd-journal-upload.service
 fi

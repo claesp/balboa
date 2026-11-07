@@ -82,6 +82,7 @@ class PipelineTests(unittest.TestCase):
         text, _ = render_text("server", site, "vda", "boot")
         self.assertIn("rootpw --iscrypted " + self.site["password_hash"], text)
         self.assertIn("/etc/systemd/journal-upload.conf.d/60-balboa.conf", text)
+        self.assertIn("install -d -m 0755 /etc/systemd/journal-upload.conf.d", text)
         self.assertIn("/etc/systemd/system/systemd-journal-upload.service.d/60-balboa-credentials.conf", text)
         with self.assertRaises(ValueError):
             valid_site({**site, "root_password_hash": "plaintext"})
@@ -95,6 +96,7 @@ class PipelineTests(unittest.TestCase):
         text, _ = render_text("server", self.site, "vda", "boot", True, "a" * 40, lab_tls=tls)
         self.assertIn("chmod 0600 /etc/pki/balboa/client.key", text)
         self.assertIn("chmod 0644 /etc/pki/balboa/ca.pem", text)
+        self.assertIn("install -d -m 0755 /etc/pki/balboa", text)
 
     def test_logging_rejects_insecure_or_injected_values(self):
         for upload in ({"url": "http://logs.example.test"},

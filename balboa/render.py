@@ -103,10 +103,12 @@ def render_text(flavor, site, disk, kind, lab=False, passphrase=None, disk_gb=No
             raise ValueError("Disposable TLS material requires lab mode.")
         if set(lab_tls) != {"ca.pem", "client.pem", "client.key"}:
             raise ValueError("Disposable TLS material requires the expected certificate and key files.")
+        files += "install -d -m 0755 /etc/pki/balboa\n"
         for name, content in lab_tls.items():
             files += file_fragment("/etc/pki/balboa/" + name, content, mode="0600" if name.endswith(".key") else "0644")
     upload = site.get("journal_upload")
     if upload:
+        files += "install -d -m 0755 /etc/systemd/journal-upload.conf.d\n"
         lines = ["[Upload]", "URL=" + upload["url"]]
         names = {"trusted_certificate_file": "TrustedCertificateFile", "client_certificate_file": "ServerCertificateFile"}
         for field, name in names.items():

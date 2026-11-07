@@ -9,6 +9,9 @@ The installed DNF configuration also disables weak dependencies and retains the 
 The common security tools support the required hardening and assessment workflow.
 They include OpenSCAP, AIDE, audit, SELinux support, and the firewall.
 They remain installed so that the operator can assess later changes.
+The selected security content requires an rsyslog file permission rule even when journald supplies the logs.
+The images retain that package but mask its service.
+Only journald supplies active system logging.
 
 ## Server
 

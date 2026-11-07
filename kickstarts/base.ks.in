@@ -44,6 +44,7 @@ microcode_ctl
 amd-ucode-firmware
 python3
 systemd-journal-remote
+rsyslog
 sudo
 tar
 gzip

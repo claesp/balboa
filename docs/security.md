@@ -107,7 +107,9 @@ Restrict staging access until the security owner accepts the release evidence.
 The administrator can use the local console to examine results.
 The administrator controls each later firewall change.
 
-The images use persistent journald logs and exclude rsyslog.
+The images use persistent journald logs and mask the rsyslog service.
+The rsyslog package remains installed because the selected content requires its file permission configuration.
+The images apply that configuration without an active rsyslog daemon.
 The images mask the journal receiver service and socket.
 Central logging uses the journal upload service with HTTPS.
 The site supplies its receiver address and certificate paths.

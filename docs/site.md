@@ -47,6 +47,7 @@ The renderer rejects HTTP, URL credentials, and certificate paths outside `/etc/
 The certificate fields contain paths, not certificate contents.
 Provision the certificates and private key through the approved site procedure before the first boot.
 Use mode `0644` for public certificates and mode `0600` for the root-owned private key.
+Use mode `0755` for directories that contain public certificates.
 
 The service uses `LoadCredential` to read the private key with its restricted service identity.
 Production media never embeds private TLS key contents through these fields.

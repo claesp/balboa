@@ -20,6 +20,8 @@ lsblk -o NAME,TYPE,FSTYPE,MOUNTPOINTS > "$out/storage.txt"
 findmnt > "$out/mounts.txt"
 getenforce > "$out/selinux.txt"
 systemctl --failed --no-pager > "$out/failed-units.txt"
+systemctl show systemd-journal-upload.service -p ActiveState -p SubState -p Result > "$out/journal-upload.txt"
+journalctl -b -u systemd-journal-upload.service --no-pager > "$out/journal-upload.log"
 if [[ "$FLAVOR" == server ]]; then
     sshd -t
     systemctl is-active sshd.service > "$out/sshd.txt"
