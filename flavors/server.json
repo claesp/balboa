@@ -15,6 +15,11 @@
     "cups",
     "avahi",
     "linux-firmware",
+    "amd-gpu-firmware",
+    "intel-gpu-firmware",
+    "nvidia-gpu-firmware",
+    "iwlwifi-dvm-firmware",
+    "iwlwifi-mvm-firmware",
     "postfix"
   ],
   "desktop": false

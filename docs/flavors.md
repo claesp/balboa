@@ -20,6 +20,7 @@ It excludes GNOME, wireless management, and Bluetooth services.
 It also excludes printing and local service discovery.
 
 The server does not install the general firmware bundle.
+It also excludes graphics firmware and the Intel wireless firmware that the installer otherwise adds.
 For physical hardware, add the firmware that the selected storage and network devices require.
 QEMU uses virtual devices that do not require that firmware bundle.
 
