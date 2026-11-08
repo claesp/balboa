@@ -1,4 +1,5 @@
 {
+  "branding_text": "Balboa",
   "hostname": "rocky.example.test",
   "username": "adminuser",
   "password_hash": "REPLACE_WITH_A_SHA512_CRYPT_HASH",

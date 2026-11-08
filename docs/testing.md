@@ -8,7 +8,7 @@ For an ISO installation in a QEMU window, use [Interactive QEMU tests](qemu.md).
 ## Local tests
 
 Operate this command on the Linux build host.
-The tests require Python 3.11 or later.
+The tests require Python 3.11 or later, ImageMagick with SVG support, and the DejaVu Sans font.
 The tests do not require network access or administrator privileges.
 
 ```sh
@@ -18,6 +18,8 @@ make test
 The tests reject unsafe site values and disk selections.
 They reject empty, ambiguous, and unresolved security reports.
 They also reject unsafe files in guest evidence archives.
+Image tests assess text restrictions, PNG dimensions, embedded bytes, and manifest digests.
+The LUKS tests accept five characters and reject four characters.
 
 ## Podman tests
 
@@ -51,6 +53,8 @@ Use QEMU for those tests.
 The baseline test does the post-installation script in a disposable container.
 It installs the explicit packages with weak dependencies disabled.
 The container does not assess kernel or storage controls.
+For desktop flavors, the test reads wallpaper and login image values through GNOME.
+The test also requires the login image to remain readable by GDM.
 
 Operate this example on the build host after the lab renderer.
 Replace both flavor references to examine another flavor.

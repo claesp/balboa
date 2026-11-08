@@ -148,3 +148,5 @@ fi
 # Network access requires operator firewall rules after installation.
 firewall-offline-cmd --set-default-zone=drop
 restorecon -RF /etc/balboa /usr/local/libexec/balboa /etc/systemd/system
+
+bash /usr/local/libexec/balboa/branding.sh

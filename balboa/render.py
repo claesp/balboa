@@ -12,6 +12,7 @@ import stat
 import subprocess
 from urllib.parse import urlsplit
 
+from . import branding
 from .storage import kickstart_volumes, layout
 from .policy import EXCLUSIONS, tailoring
 
@@ -19,8 +20,8 @@ ROOT = Path(__file__).resolve().parent.parent
 
 
 def validate_luks_passphrase(value):
-    if not isinstance(value, str) or not 15 <= len(value) <= 128 or not value.isprintable():
-        raise ValueError("The LUKS passphrase requires 15 to 128 printable characters without line breaks.")
+    if not isinstance(value, str) or not 5 <= len(value) <= 128 or not value.isprintable():
+        raise ValueError("The LUKS passphrase requires 5 to 128 printable characters without line breaks.")
     if value == "REPLACE_WITH_A_PLAINTEXT_LUKS_PASSPHRASE":
         raise ValueError("Replace the example LUKS passphrase with the actual passphrase, or omit the field for interactive installation.")
 
@@ -57,12 +58,13 @@ def valid_site(site):
         "language": r"[a-z]{2}_[A-Z]{2}\.UTF-8",
     }
     required = set(patterns) | {"root_password_hash"}
-    if not required <= set(site) or set(site) - required - {"journal_upload", "luks_passphrase"}:
+    if not required <= set(site) or set(site) - required - {"journal_upload", "luks_passphrase", "branding_text"}:
         raise ValueError("The site file contains missing or unknown fields.")
     for key, pattern in patterns.items():
         if not isinstance(site[key], str) or not re.fullmatch(pattern, site[key]):
             raise ValueError(f"The site field {key} is not permitted.")
     validate_keyboard(site["keyboard"])
+    branding.validate_text(site.get("branding_text", "Balboa"))
     root_hash = site["root_password_hash"]
     if not isinstance(root_hash, str) or not re.fullmatch(patterns["password_hash"], root_hash):
         raise ValueError("The root console password requires a SHA512 crypt digest.")
@@ -104,7 +106,7 @@ def valid_site(site):
 
 
 def file_fragment(path, content, executable=False, mode=None):
-    encoded = base64.b64encode(content.encode()).decode()
+    encoded = base64.b64encode(content.encode() if isinstance(content, str) else content).decode()
     mode = mode or ("0755" if executable else "0600")
     # Paths are repository constants. Site data never enters a shell command.
     return f"install -d {Path(path).parent}\nprintf '%s' '{encoded}' | base64 -d > {path}\nchmod {mode} {path}\n"
@@ -127,8 +129,16 @@ def render_text(flavor, site, disk, kind, lab=False, passphrase=None, disk_gb=No
     definition = json.loads((ROOT / "flavors" / f"{flavor}.json").read_text())
     storage = layout(disk_gb, lab)
     files = ""
-    for name in ("baseline.sh", "harden.sh", "audit.sh", "failure.sh", "export.sh", "result_gate.py", "native_checks.py"):
+    for name in ("baseline.sh", "branding.sh", "harden.sh", "audit.sh", "failure.sh", "export.sh", "result_gate.py", "native_checks.py"):
         files += file_fragment("/usr/local/libexec/balboa/" + name, (ROOT / "guest" / name).read_text(), True)
+    assets = branding.images(site.get("branding_text", "Balboa"))
+    files += f"install -d -m 0755 {branding.BOOT_DIR}\n"
+    files += file_fragment(branding.BOOT_DIR + "/boot.png", assets["boot.png"], mode="0644")
+    files += file_fragment(branding.BOOT_DIR + "/theme.txt", branding.GRUB_THEME, mode="0644")
+    if definition["desktop"]:
+        files += f"install -d -m 0755 {branding.DESKTOP_DIR}\n"
+        for name in ("wallpaper.png", "login.png"):
+            files += file_fragment(branding.DESKTOP_DIR + "/" + name, assets[name], mode="0644")
     for name in ("balboa-harden.service", "balboa-audit.service"):
         files += file_fragment("/etc/systemd/system/" + name, (ROOT / "guest" / name).read_text())
     profile_id, tailoring_xml = tailoring(flavor, definition["profile"])
@@ -197,6 +207,8 @@ def render(args):
     if args.lab_logging_dir and not args.lab:
         raise ValueError("Disposable logging credentials require --lab.")
     site = None if args.lab else read_site(args.site)
+    branding_text = args.branding_text if args.branding_text is not None else (site or {}).get("branding_text", "Balboa")
+    assets = branding.images(branding_text)
     passphrase = None
     output = args.output.resolve()
     output.mkdir(parents=True, exist_ok=True)
@@ -234,6 +246,10 @@ def render(args):
                                       "client_key_file": "/etc/pki/balboa/client.key"}
     else:
         disk = args.disk
+    site = {**site, "branding_text": branding_text}
+    (output / "branding").mkdir()
+    for name, data in assets.items():
+        (output / "branding" / name).write_bytes(data)
     text, definition = render_text(args.flavor, site, disk, args.kind, args.lab, passphrase, args.disk_size_gb, lab_tls)
     if not args.lab:
         passphrase = site.get("luks_passphrase")
@@ -245,6 +261,7 @@ def render(args):
                 "luks_passphrase_source": "generated-lab" if args.lab else "site" if passphrase is not None else "interactive",
                 "root_console_password_configured": bool(site.get("root_password_hash")),
                 "journal_upload_configured": bool(site.get("journal_upload")),
+                "branding": branding.record(branding_text),
                 "policy_deviations": EXCLUSIONS,
                 "disk": disk, "source_kind": args.kind,
                 "storage": layout(args.disk_size_gb, args.lab),

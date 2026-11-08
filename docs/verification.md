@@ -6,7 +6,7 @@ The source media is the authenticated Rocky Linux 10.2 boot ISO.
 
 ## Completed tests
 
-The local suite contains 38 passing tests.
+The local suite contains 41 passing tests.
 It includes site input restrictions, report assessment, guest archive restrictions, and expected OpenSCAP exit handling.
 The suite also tests the serial unlock procedure and installer error detection.
 The local suite accepts matching root console and administrator password digests for all three flavors.
@@ -16,6 +16,8 @@ The Swedish layout `se` renders correctly for all three flavors.
 The Rocky container preflight accepts `se` and rejects `sv` before ISO creation.
 Encryption tests cover site JSON passphrases, quoted characters, file permissions, and rejected control characters.
 The tests require the passphrase to remain absent from manifests and console output.
+The LUKS boundary tests accept five characters and reject four characters.
+The image tests assess literal text, generated PNG dimensions, manifest digests, and embedded bytes.
 
 All three flavors pass the RHEL10 Kickstart parser.
 All guest shell programs pass Bash syntax tests.
@@ -170,3 +172,35 @@ UEFI USB boot and Secure Boot require separate tests.
 The other BIOS and UEFI flavor combinations require separate tests.
 Laptop wireless operation, suspend, resume, and docking require physical hardware tests.
 Site controls require an approved benchmark review and retained evidence.
+
+## Generated boot and desktop images
+
+The November 8 image tests cover all three minimal flavors.
+The renderer creates three PNG files with the selected text.
+The manifest digests match the generated files and the embedded Kickstart bytes.
+
+All three baseline container tests pass with the generated assets.
+The workstation and laptop tests read the wallpaper and login values through GNOME.
+The tests also require GDM to read the login image.
+
+The branded laptop completes a DVD installation on a fixed 32 GB UEFI virtual disk.
+A QEMU screenshot shows the generated boot image behind the installed GRUB menu.
+Another screenshot shows the custom login banner and `Powered by Rocky Linux`.
+
+A separate server test uses a five-character LUKS passphrase from site JSON.
+The official Rocky DVD installer creates the encrypted LVM layout without an encryption setup prompt.
+The installer completes its installation scripts and powers off.
+
+The local evidence resides under `build/branding-test/`.
+The test directories contain disposable credentials and remain outside version control.
+The five-character test uses a separate small ISO for the rendered Kickstart and the official DVD for packages.
+
+The initial DVD assessment records 425 passing controls and one account-shell finding.
+The finding includes a trailing line break in the final administrator shell path.
+It matches the [known security content defect](https://github.com/ComplianceAsCode/content/pull/14751).
+The original report remains in `collected-dvd-original/evidence/` under the laptop VM directory.
+
+The test VM receives security content updates through the official Rocky repositories.
+The updated packages are `scap-security-guide-0.1.82-2.el10_2.rocky.1.1` and `openscap-scanner-1.4.4-1.el10_2`.
+The GNOME session shows the generated default wallpaper after login.
+The installed image digests match the render manifest after hardening.

@@ -7,6 +7,7 @@ QEMU supplies a virtual machine for installation tests.
 The host requires these tools:
 
 - Python 3.11 or later
+- ImageMagick with SVG support and the DejaVu Sans font
 - Curl and GnuPG
 - Podman
 - OpenSSL and OpenSSH tools
@@ -109,6 +110,10 @@ python3 -m balboa validate build/production-server/installation.ks
 python3 -m balboa iso build/production-server/installation.ks --output build/balboa-server.iso
 ```
 
+The render step also creates three PNG images under the output directory in `branding/`.
+Set `branding_text` in the site file to put your text below the logo.
+See [Boot and desktop images](branding.md) for image locations and the command override.
+
 For workstations, replace `server` with `workstation` and use a new output directory.
 For laptops, replace `server` with `laptop` and use a new output directory.
 The renderer rejects an existing output directory that contains files.
@@ -134,7 +139,7 @@ A LUKS passphrase is an encryption secret for the disk.
 Account and GRUB password digests do not supply this secret.
 Set `luks_passphrase` in `site.json` to supply the installation key.
 
-The value must contain the actual plaintext passphrase, with 15 to 128 printable characters.
+The value must contain the actual plaintext passphrase, with 5 to 128 printable characters.
 The renderer rejects embedded line breaks and control characters.
 Omit the field or use `null` to request interactive entry during installation.
 
@@ -191,6 +196,20 @@ python3 -m balboa iso build/laptop-dvd/installation.ks --kind dvd --output build
 The DVD package collection can differ from the online repositories.
 Do an installation test of each selected DVD flavor.
 Apply approved updates before release.
+The locked DVD contains SCAP Security Guide 0.1.80 with a known account-shell assessment defect.
+The defect can report a valid administrator shell as invalid.
+The [upstream correction](https://github.com/ComplianceAsCode/content/pull/14751) fixes the final account entry in `/etc/passwd`.
+
+After a DVD installation, apply the approved security content update at the installed system console.
+This command requires network access to the official Rocky repositories.
+Retain the previous evidence before another assessment.
+
+```sh
+sudo dnf -y upgrade scap-security-guide openscap-scanner
+```
+
+Use [Operation and recovery](security.md#operation-and-recovery) to repeat the assessment after approved updates.
+The release test must pass with the updated content.
 
 ## Boot interfaces
 

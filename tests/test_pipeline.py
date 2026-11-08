@@ -189,11 +189,60 @@ class PipelineTests(unittest.TestCase):
             read_site(fifo)
 
     def test_luks_passphrase_rejects_controls_without_exposing_its_contents(self):
-        for secret in ("short", "long secret value\n%post\n", "a secret with a null\0", "a" * 129,
+        for secret in ("four", "long secret value\n%post\n", "a secret with a null\0", "a" * 129,
                        "REPLACE_WITH_A_PLAINTEXT_LUKS_PASSPHRASE"):
             with self.subTest(length=len(secret)), self.assertRaises(ValueError) as error:
                 valid_site({**self.site, "luks_passphrase": secret})
             self.assertNotIn(secret, str(error.exception))
+
+    def test_luks_accepts_five_characters_and_keeps_lab_secrets_long(self):
+        import shlex
+        for secret in ("test5", "a" * 128):
+            text, _ = render_text("laptop", {**self.site, "luks_passphrase": secret}, "vda", "boot")
+            line = next(line for line in text.splitlines() if line.startswith("part pv.01"))
+            self.assertIn("--passphrase=" + secret, shlex.split(line))
+        with self.assertRaises(ValueError):
+            render_text("laptop", self.site, "vda", "boot", True, "test5")
+
+    def test_branding_rejects_controls_and_escapes_literal_text(self):
+        from balboa import branding
+        for value in (None, "", " ", "a" * 65, "text\n%post", 12):
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                valid_site({**self.site, "branding_text": value})
+        label = '<logo> & "example"'
+        root = ET.fromstring(branding.vector(label, "login.png"))
+        texts = [element.text for element in root.iter() if element.tag.endswith("text")]
+        self.assertEqual(texts, [label, "Powered by Rocky Linux"])
+        self.assertNotIn("Powered by Rocky Linux", branding.vector(label, "boot.png"))
+
+    def test_render_creates_three_pngs_with_manifest_and_embedded_bytes(self):
+        import base64
+        import contextlib
+        import hashlib
+        import struct
+        from balboa import branding
+        from balboa.cli import parser
+        site = self.root / "site.json"
+        site.write_text(json.dumps({**self.site, "branding_text": "Site label"}))
+        output = self.root / "branded"
+        args = parser().parse_args(["render", "--flavor", "laptop", "--site", str(site),
+                                   "--disk", "vda", "--output", str(output), "--branding-text", "Test & Lab"])
+        with contextlib.redirect_stdout(io.StringIO()):
+            render(args)
+        manifest = json.loads((output / "installation.json").read_text())["branding"]
+        self.assertEqual(manifest["text"], "Test & Lab")
+        self.assertEqual({p.name for p in (output / "branding").iterdir()}, set(branding.SIZES))
+        ks = (output / "installation.ks").read_text()
+        for name, size in branding.SIZES.items():
+            data = (output / "branding" / name).read_bytes()
+            self.assertEqual(data[:8], b"\x89PNG\r\n\x1a\n")
+            self.assertEqual(struct.unpack(">II", data[16:24]), size)
+            self.assertEqual(manifest["images"][name]["sha256"], hashlib.sha256(data).hexdigest())
+            self.assertIn(base64.b64encode(data).decode(), ks)
+        server, _ = render_text("server", self.site, "vda", "boot")
+        self.assertIn(branding.BOOT_DIR + "/boot.png", server)
+        self.assertNotIn(" > " + branding.DESKTOP_DIR + "/wallpaper.png", server)
+        self.assertNotIn(" > " + branding.DESKTOP_DIR + "/login.png", server)
 
     def test_render_reads_site_key_and_does_not_disclose_it_in_metadata(self):
         import contextlib

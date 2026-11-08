@@ -164,6 +164,7 @@ def parser():
     generate = commands.add_parser("render", help="Create a Kickstart for one flavor.")
     generate.add_argument("--flavor", choices=("server", "workstation", "laptop"), required=True)
     generate.add_argument("--kind", choices=("boot", "dvd"), default="boot")
+    generate.add_argument("--branding-text", help="Text below the logo. Overrides site branding_text. Default: Balboa.")
     generate.add_argument("--output", type=Path, required=True)
     generate.add_argument("--disk", help="The only disk that the installer can erase.")
     generate.add_argument("--disk-size-gb", type=int, help="Fixed disk budget in decimal GB. Defaults: production 128, lab 32.")

@@ -41,6 +41,7 @@ Balboa retains signature files in `cache/`.
 [Interactive QEMU tests](qemu.md) describes the script for ISO installation and desktop access.
 [Maintenance](maintenance.md) describes source and policy changes.
 [Verification record](verification.md) records completed tests and release evidence.
+[Boot and desktop images](branding.md) describes the generated logo, text, and images.
 [Minimal flavors](flavors.md) describes package selection and hardware services.
 [Fixed storage](storage.md) describes disk sizes, LVM, and mount restrictions.
 [Site configuration](site.md) describes recovery credentials and central logging.

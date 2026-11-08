@@ -56,6 +56,7 @@ Use these documents for each project task:
 | Task | Document |
 | --- | --- |
 | Prepare the host and create installation ISOs | [Build and installation](docs/build.md) |
+| Set the logo text and generate boot and desktop images | [Boot and desktop images](docs/branding.md) |
 | Select packages and hardware support | [Minimal flavors](docs/flavors.md) |
 | Set disk sizes and mount restrictions | [Fixed storage](docs/storage.md) |
 | Supply credentials and central logging configuration | [Site configuration](docs/site.md) |

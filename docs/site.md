@@ -51,7 +51,7 @@ The account and bootloader digest fields do not configure the LUKS passphrase.
 Without an explicit installation key, the installer prompts for this passphrase.
 For unattended installation, set the optional `luks_passphrase` field in the site JSON file.
 
-The field contains the actual plaintext passphrase, with 15 to 128 printable characters and no line breaks.
+The field contains the actual plaintext passphrase, with 5 to 128 printable characters and no line breaks.
 It differs from `bootloader_password_hash`, which protects GRUB commands.
 The renderer embeds the passphrase in the generated Kickstart and ISO.
 
@@ -59,6 +59,17 @@ Use mode `0600` for a site file that contains this field.
 The renderer rejects group or other access to a site file that contains a LUKS passphrase.
 Omit the field or use `null` to request interactive installation entry.
 Use [Unattended disk encryption](build.md#unattended-disk-encryption) for the build procedure.
+
+## Image text
+
+The optional `branding_text` field supplies the text below the generated logo.
+The default value is `Balboa`.
+The field accepts 1 to 64 printable characters without line breaks.
+
+The render flag `--branding-text` overrides the site value.
+The same text appears in all three images.
+See [Boot and desktop images](branding.md) for image generation and installation.
+
 
 ## Central journal receiver
 

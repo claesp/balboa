@@ -32,6 +32,10 @@ import sys
 definition = json.loads(Path('/workspace/flavors', sys.argv[1] + '.json').read_text())
 Path('/etc/balboa/native-policy.json').write_text(json.dumps({'excluded_packages': definition['exclude']}))
 PY
+if [[ "$desktop" == yes ]]; then
+    install -d -m 0755 /usr/share/backgrounds/balboa
+    install -m 0644 "$(dirname "$ks")/branding/wallpaper.png" "$(dirname "$ks")/branding/login.png" /usr/share/backgrounds/balboa/
+fi
 bash /workspace/guest/baseline.sh
 test -f /etc/audit/rules.d/60-balboa.rules
 visudo -cf /etc/sudoers
@@ -41,5 +45,8 @@ last_change=$(getent shadow balboasmoke | cut -d: -f3)
 if [[ "$desktop" == yes ]]; then
     runuser -u balboasmoke -- test -r /etc/dconf/profile/user
     runuser -u balboasmoke -- test -r /etc/dconf/db/local
+    runuser -u gdm -- test -r /usr/share/backgrounds/balboa/login.png
+    [[ "$(runuser -u balboasmoke -- gsettings get org.gnome.desktop.background picture-uri)" == "'file:///usr/share/backgrounds/balboa/wallpaper.png'" ]]
+    [[ "$(runuser -u gdm -- env DCONF_PROFILE=gdm gsettings get org.gnome.login-screen logo)" == "'/usr/share/backgrounds/balboa/login.png'" ]]
 fi
 printf 'The minimal post-installation script passed for %s.\n' "$flavor"
