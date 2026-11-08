@@ -95,12 +95,20 @@ class PipelineTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             valid_site({**site, "root_password_hash": "plaintext"})
 
-    def test_site_requires_a_separate_root_console_password(self):
+    def test_site_requires_a_root_console_password(self):
         without_root = {k:v for k,v in self.site.items() if k != "root_password_hash"}
-        for site in (without_root, {**self.site, "root_password_hash": ""},
-                     {**self.site, "root_password_hash": self.site["password_hash"]}):
+        for site in (without_root, {**self.site, "root_password_hash": ""}):
             with self.subTest(site=site), self.assertRaises(ValueError):
                 valid_site(site)
+
+    def test_flavors_accept_matching_root_and_administrator_digests(self):
+        site = {**self.site, "root_password_hash": self.site["password_hash"]}
+        valid_site(site)
+        for flavor in ("server", "workstation", "laptop"):
+            with self.subTest(flavor=flavor):
+                text, _ = render_text(flavor, site, "vda", "boot")
+                self.assertIn("rootpw --iscrypted " + site["password_hash"], text)
+                self.assertIn("--groups=wheel --iscrypted --password=" + site["password_hash"], text)
 
     def test_disposable_tls_never_enters_production_or_uses_other_paths(self):
         tls = {"ca.pem": "test CA", "client.pem": "test certificate", "client.key": "test private key"}

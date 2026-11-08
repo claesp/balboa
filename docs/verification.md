@@ -6,9 +6,10 @@ The source media is the authenticated Rocky Linux 10.2 boot ISO.
 
 ## Completed tests
 
-The local suite contains 24 passing tests.
+The local suite contains 25 passing tests.
 It includes site input restrictions, report assessment, guest archive restrictions, and expected OpenSCAP exit handling.
 The suite also tests the serial unlock procedure and installer error detection.
+The local suite accepts matching root console and administrator password digests for all three flavors.
 
 All three flavors pass the RHEL10 Kickstart parser.
 All guest shell programs pass Bash syntax tests.
@@ -59,7 +60,7 @@ The receiver offers HTTP/1.1 to avoid the observed systemd 257 HTTP/2 buffer err
 Private key access uses a restricted group because Rocky SELinux policy blocks the default systemd credential label.
 The tests retain SELinux enforcement throughout both corrections.
 
-The production policy requires a separate root console password.
+The production policy requires a root console password.
 Production log receiver values remain deployment-time configuration.
 The lab images use disposable root passwords and a local authenticated receiver.
 

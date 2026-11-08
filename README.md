@@ -43,7 +43,7 @@ The images use CIS Level 2 based security profiles with two declared policy diff
 OpenSCAP applies the selected profile and assesses the installed system after a restart.
 The project does not claim CIS certification or conformance to an unmodified benchmark.
 
-Production builds require a separate root console password.
+Production builds require a root console password.
 SSH root login remains disabled.
 Central logging values remain deployment-time configuration.
 See [Security policy](docs/security.md) and [Site configuration](docs/site.md) before production release.

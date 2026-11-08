@@ -12,11 +12,10 @@ See [Build and installation](build.md) before you create production media.
 
 The required `root_password_hash` field accepts a SHA512 crypt password digest.
 The digest uses the same format as `password_hash`.
-Use a separate root password and retain it in the site recovery vault.
+Retain the root password in the site recovery vault.
 
-The renderer rejects a missing digest and a digest identical to the administrator digest.
-Different salted digests do not prove different passwords.
-The site must assign separate passwords through its recovery procedure.
+The renderer rejects a missing or malformed digest.
+The root console and administrator password fields can contain the same digest.
 
 The root password permits local console recovery.
 SSH root login remains disabled.

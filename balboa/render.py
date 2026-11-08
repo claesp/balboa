@@ -35,8 +35,6 @@ def valid_site(site):
     root_hash = site["root_password_hash"]
     if not isinstance(root_hash, str) or not re.fullmatch(patterns["password_hash"], root_hash):
         raise ValueError("The root console password requires a SHA512 crypt digest.")
-    if root_hash == site["password_hash"]:
-        raise ValueError("The root console and administrator passwords require separate digests.")
     upload = site.get("journal_upload")
     if upload is not None:
         allowed = {"url", "trusted_certificate_file", "client_certificate_file", "client_key_file"}

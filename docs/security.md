@@ -54,9 +54,10 @@ The firmware and boot partitions remain unencrypted.
 
 Separate filesystems contain `/home`, `/tmp`, `/var`, `/var/tmp`, `/var/log`, and `/var/log/audit`.
 Temporary filesystems reject direct program execution through the `noexec` mount flag.
-Each image requires a separate root console password digest.
+Each image requires a root console password digest.
 The selected recovery policy requires this password for local recovery.
-The renderer rejects an absent root digest or a digest identical to the administrator digest.
+The renderer rejects an absent or malformed root digest.
+The root console and administrator password fields can contain the same digest.
 SSH rejects root login.
 
 GRUB requires a password for changes to boot commands.

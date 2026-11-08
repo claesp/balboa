@@ -53,8 +53,8 @@ ssh-keygen -t ed25519 -f ~/.ssh/balboa_operator
 ```
 
 Put the password digest in `password_hash` in `site.json`.
-Create another digest with `openssl passwd -6` for a separate root console password.
-Put that digest in `root_password_hash` in `site.json`.
+Put the root console password digest in `root_password_hash` in `site.json`.
+Both password fields can contain the same digest.
 Retain the root password in the approved recovery vault.
 Put the public key contents in `ssh_public_key` in `site.json`.
 Set the hostname and local language fields in `site.json`.
