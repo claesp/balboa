@@ -417,3 +417,10 @@ The regenerated inventory matches the committed inventory byte for byte.
 
 The temporary log receiver stops after these tests.
 The active user VM and its existing installation media retain their previous contents.
+
+## CP69net X1 test image
+
+The later production laptop build uses the private site input and the fixed 128 GB layout for `nvme0n1`.
+The rootless UEFI USB builder updates the appended firmware partition without host administrator privileges.
+Its configuration and signed program comparisons pass, and QEMU shows the USB installation menu.
+See [CP69net X1 test image](cp69net-x1-build.md) for the artifact digest, build procedure, and installation behavior.

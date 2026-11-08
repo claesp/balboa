@@ -1,13 +1,19 @@
 """Inspect customized ISO boot entries and embedded Kickstart contents."""
 
+import argparse
 from pathlib import Path
+import re
 import subprocess
-import sys
 import tempfile
 
 
 def main():
-    iso, ks = sys.argv[1:]
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("iso")
+    parser.add_argument("kickstart")
+    parser.add_argument("--usb-uefi", action="store_true")
+    args = parser.parse_args()
+    iso, ks = args.iso, args.kickstart
     with tempfile.TemporaryDirectory() as temporary:
         root = Path(temporary)
         for name in ("installation.ks", "EFI/BOOT/grub.cfg", "boot/grub2/grub.cfg"):
@@ -26,6 +32,23 @@ def main():
         report = result.stdout + result.stderr
         if "BIOS" not in report or "UEFI" not in report:
             raise ValueError("The ISO does not contain both BIOS and UEFI boot entries.")
+        if args.usb_uefi:
+            system = subprocess.run(["xorriso", "-indev", iso, "-report_system_area", "plain"],
+                                    check=True, capture_output=True, text=True)
+            match = re.search(r"GPT start and size\s*:\s*2\s+(\d+)\s+(\d+)", system.stdout + system.stderr)
+            if not match:
+                raise ValueError("The ISO lacks the expected UEFI USB partition.")
+            image = str(Path(iso).resolve()) + "@@" + str(int(match[1]) * 512)
+            for name in ("grub.cfg", "BOOTX64.EFI", "grubx64.efi", "mmx64.efi"):
+                original = root / "EFI/BOOT" / name
+                if not original.exists():
+                    subprocess.run(["xorriso", "-osirrox", "on", "-indev", iso, "-extract",
+                                    "/EFI/BOOT/" + name, str(original)], check=True, capture_output=True)
+                actual = root / ("usb-" + name)
+                subprocess.run(["mcopy", "-i", image, "::/EFI/BOOT/" + name, str(actual)], check=True)
+                if actual.read_bytes() != original.read_bytes():
+                    raise ValueError("The UEFI USB partition differs from the reviewed EFI file: " + name)
+            print("UEFI USB configuration and signed boot programs match the ISO files.")
         print("Embedded Kickstart and BIOS/UEFI optical boot entries passed inspection.")
 
 

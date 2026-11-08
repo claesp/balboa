@@ -93,10 +93,10 @@ def tools_build(args):
          "-f", ROOT / "containers/Containerfile", "-t", TOOLS, ROOT])
 
 
-def container(argv, mounts=(), network="none", capture_output=False):
+def container(argv, mounts=(), network="none", capture_output=False, rootless_root=False):
     command = ["podman", "run", "--rm", "--network", network, "--cap-drop=all",
-               "--security-opt=no-new-privileges", "--user", str(os.getuid())]
-    if os.getuid() != 0:
+               "--security-opt=no-new-privileges", "--user", "0" if rootless_root else str(os.getuid())]
+    if os.getuid() != 0 and not rootless_root:
         command += ["--userns=keep-id"]
     for host, guest, mode in mounts:
         command += ["-v", f"{Path(host).resolve()}:{guest}:{mode}"]
@@ -148,19 +148,27 @@ def iso(args):
     try:
         if args.native:
             run(["mkksiso", "--ks", ks, "--cmdline", cmdline] + boot_menu + [source, output], umask=0o077)
+        elif args.usb_uefi:
+            container(["python3", "/workspace/scripts/mkksiso-uefi.py", "--ks", "/input/" + ks.name,
+                       "--cmdline", cmdline] + boot_menu + ["/source/" + source.name, "/output/" + output.name],
+                      [(ROOT, "/workspace", "ro"), (source.parent, "/source", "ro"),
+                       (ks.parent, "/input", "ro"), (output.parent, "/output", "rw")], rootless_root=True)
         else:
             container(["bash", "-c", 'umask 077; exec "$@"', "bash", "mkksiso", "--skip-mkefiboot", "--ks", "/input/" + ks.name,
                        "--cmdline", cmdline] + boot_menu + ["/source/" + source.name, "/output/" + output.name],
                       [(source.parent, "/source", "ro"), (ks.parent, "/input", "ro"),
                        (output.parent, "/output", "rw")])
-        container(["python3", "/workspace/tests/iso_checks.py", "/media/" + output.name, "/input/" + ks.name],
+        container(["python3", "/workspace/tests/iso_checks.py", "/media/" + output.name, "/input/" + ks.name] +
+                  (["--usb-uefi"] if args.native or args.usb_uefi else []),
                   [(ROOT, "/workspace", "ro"), (output.parent, "/media", "ro"), (ks.parent, "/input", "ro")])
         output.chmod(0o600)
     except BaseException:
         output.unlink(missing_ok=True)
         raise
     metadata.update({"iso_sha256": sha256(output), "source_sha256": image["sha256"],
-                     "usb_uefi": args.native, "tools_base": lock["container"],
+                     "usb_uefi": args.native or args.usb_uefi,
+                     "efi_builder": "native" if args.native else "mtools" if args.usb_uefi else "unchanged",
+                     "tools_base": lock["container"],
                      "source_lock_sha256": sha256(LOCK)})
     metadata["tools_image_id"] = run(["podman", "image", "inspect", TOOLS, "--format", "{{.Id}}"],
                                       capture_output=True, text=True).stdout.strip()
@@ -207,7 +215,9 @@ def parser():
     media.add_argument("--kind", choices=("dvd",), default="dvd")
     media.add_argument("--cache", type=Path, default=ROOT / "cache")
     media.add_argument("--output", type=Path, required=True)
-    media.add_argument("--native", action="store_true", help="Use host mkksiso, including the UEFI USB image.")
+    firmware = media.add_mutually_exclusive_group()
+    firmware.add_argument("--native", action="store_true", help="Use host mkksiso, including the UEFI USB image.")
+    firmware.add_argument("--usb-uefi", action="store_true", help="Update the UEFI USB partition with mtools in rootless Podman.")
     media.set_defaults(func=iso)
     machine = commands.add_parser("vm", help="Install or boot a VM with isolated storage.")
     machine.add_argument("--iso", type=Path, required=True)

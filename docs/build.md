@@ -222,9 +222,24 @@ The release test must pass with the updated content.
 
 The default Podman build preserves BIOS and UEFI optical boot structures.
 It uses `mkksiso --skip-mkefiboot` because the container cannot mount the embedded firmware image.
-UEFI boot from a USB device requires the native build mode.
+UEFI boot from a USB device requires `--usb-uefi` or the native build mode.
+Rootless Podman operates without host administrator privileges.
 
-For a UEFI USB image, install Lorax on a Rocky Linux 10 build host.
+For UEFI USB media, use the rootless Podman build on the build host:
+
+```sh
+python3 -m balboa iso build/production-server/installation.ks --usb-uefi --output build/balboa-server-usb.iso
+```
+
+The tool container requires `mtools` for this mode.
+If an older tool image lacks that package, rebuild it with `python3 -m balboa tools`.
+The builder uses the official Lorax program and replaces its firmware image update procedure.
+A FAT image contains the UEFI partition filesystem.
+Mtools changes the GRUB configuration within a copy of the original FAT image without a mount.
+The builder places that image in the appended UEFI partition.
+The ISO test compares its configuration and signed boot programs with the ISO files.
+
+For the alternative native mode, install Lorax on a Rocky Linux 10 build host.
 Operate the native build command with administrator privileges on that host.
 The native mode updates the embedded firmware image.
 
@@ -236,7 +251,7 @@ The native command also requires the Podman tool image for syntax tests.
 The root Podman image store is separate from the user image store.
 Prepare the tools under the same account that operates the native command.
 
-The output manifest records whether the native mode updated the UEFI USB image.
+The output manifest records whether the builder updated the UEFI USB image and which procedure it used.
 The project does not change the signed Rocky boot programs.
 Secure Boot still requires a separate firmware test.
 
