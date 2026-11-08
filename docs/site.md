@@ -71,6 +71,16 @@ The same text appears in all three images.
 See [Boot and desktop images](branding.md) for image generation and installation.
 
 
+## Graphical boot
+
+The optional `boot_splash` field accepts `true` or `false`.
+Production renders enable the graphical boot by default.
+Use `false` for a serial console or a server without graphics.
+
+The flags `--boot-splash` and `--no-boot-splash` override the site value.
+The normal lab mode uses a text boot for automatic serial unlock.
+See [Boot process](boot.md) for graphical QEMU tests and recovery.
+
 ## Central journal receiver
 
 A journal receiver accepts structured system log events.

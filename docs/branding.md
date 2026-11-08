@@ -2,9 +2,10 @@
 
 The render command creates three PNG images.
 PNG is a format for image files.
-The images contain a geometric mountain logo and your text below it.
+The images use a fixed Unsplash mountain photo, a geometric logo, and your text below it.
 
-The render host requires ImageMagick with SVG support and the DejaVu Sans font.
+The render host requires ImageMagick with SVG support, Fontconfig, and `grub2-mkfont` or `grub-mkfont`.
+The repository supplies the Inter font files.
 Image generation operates locally without network access.
 SVG is a format for vector graphics.
 ImageMagick converts generated SVG graphics into PNG files.
@@ -39,16 +40,16 @@ The render output contains these three images:
 
 | File under the output directory | Size | Installed purpose |
 | --- | --- | --- |
-| `branding/boot.png` | 1920 × 1080 | Background for the installed GRUB menu |
-| `branding/wallpaper.png` | 1920 × 1080 | Default GNOME wallpaper |
-| `branding/login.png` | 960 × 96 | Logo banner for the GNOME login screen |
+| `branding/boot.png` | 1920 × 1080 | Background for GRUB and Plymouth |
+| `branding/wallpaper.png` | 2560 × 1440 | Default GNOME wallpaper |
+| `branding/login.png` | 640 × 180 | Logo banner for the GNOME login screen |
 
 All flavors generate all three files for review.
 The server installs only the boot image.
 The workstation and laptop install all three images.
 
 The login image includes the exact phrase `Powered by Rocky Linux`.
-Its transparent background uses the login screen color.
+The login banner uses a separate crop of the mountain photo.
 GDM shows the image in its logo area.
 
 The renderer embeds the images into the Kickstart file.
@@ -58,8 +59,9 @@ The manifest records the image dimensions, text, and SHA256 digests.
 
 ## Installed behavior
 
-GRUB shows the boot image behind its menu for five seconds.
-The image appears before the kernel starts.
+GRUB shows the boot image behind its menu for two seconds.
+Plymouth reuses that image after the kernel starts.
+See [Boot process](boot.md) for the spinner, disk prompt, and text fallback.
 The installer ISO retains its official boot menu.
 
 The boot theme resides in `/boot/grub2/themes/balboa/`.
@@ -77,6 +79,29 @@ The custom image occupies the logo banner area.
 The login configuration retains the security database and the vendor defaults.
 The images do not change the account password policy.
 The LUKS passphrase accepts 5 to 128 printable characters.
+
+## Source assets and fonts
+
+The photo shows Giau Pass at sunset.
+The [Unsplash source page](https://unsplash.com/photos/aerial-view-of-mountains-during-sunset-8Nql6oVT_1A) identifies the selected photo.
+The image uses the [Unsplash License](https://unsplash.com/license).
+
+The source photo resides in `assets/photos/giau-pass.jpg`.
+The official Inter 4.1 font resides in `assets/fonts/Inter-Regular.ttf`.
+The repository retains its license in `assets/fonts/OFL.txt`.
+
+The source record is `assets/sources.json`.
+The renderer requires matching source digests before image generation.
+It crops each photo to fill its target dimensions and applies a dark overlay for text contrast.
+
+The renderer uses a private font configuration for Inter.
+It does not require a system-wide Inter installation on the build host.
+It also generates `branding/inter.pf2` for GRUB text.
+That bitmap uses the Inter glyphs with the converted family name `BalboaBoot`.
+
+The installed graphical interfaces use Inter.
+These interfaces include the generated images, GRUB, Plymouth, GNOME, and GDM.
+Firmware screens, text consoles, and terminal grids retain their native or fixed-width fonts.
 
 ## References
 

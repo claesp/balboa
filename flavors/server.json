@@ -20,7 +20,9 @@
     "nvidia-gpu-firmware",
     "iwlwifi-dvm-firmware",
     "iwlwifi-mvm-firmware",
-    "postfix"
+    "postfix",
+    "nautilus",
+    "qemu-guest-agent"
   ],
   "desktop": false
 }

@@ -149,4 +149,5 @@ fi
 firewall-offline-cmd --set-default-zone=drop
 restorecon -RF /etc/balboa /usr/local/libexec/balboa /etc/systemd/system
 
+restorecon -F /usr/lib/systemd/system-generators/60-balboa-journal-upload
 bash /usr/local/libexec/balboa/branding.sh

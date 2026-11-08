@@ -1,0 +1,9 @@
+[Plymouth Theme]
+Name=Balboa
+Description=Balboa boot splash and encrypted disk prompt
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/themes/balboa
+ScriptFile=/usr/share/plymouth/themes/balboa/balboa.script
+Font=Inter 16

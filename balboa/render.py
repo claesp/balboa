@@ -58,13 +58,15 @@ def valid_site(site):
         "language": r"[a-z]{2}_[A-Z]{2}\.UTF-8",
     }
     required = set(patterns) | {"root_password_hash"}
-    if not required <= set(site) or set(site) - required - {"journal_upload", "luks_passphrase", "branding_text"}:
+    if not required <= set(site) or set(site) - required - {"journal_upload", "luks_passphrase", "branding_text", "boot_splash"}:
         raise ValueError("The site file contains missing or unknown fields.")
     for key, pattern in patterns.items():
         if not isinstance(site[key], str) or not re.fullmatch(pattern, site[key]):
             raise ValueError(f"The site field {key} is not permitted.")
     validate_keyboard(site["keyboard"])
     branding.validate_text(site.get("branding_text", "Balboa"))
+    if "boot_splash" in site and type(site["boot_splash"]) is not bool:
+        raise ValueError("The boot_splash field requires true or false.")
     root_hash = site["root_password_hash"]
     if not isinstance(root_hash, str) or not re.fullmatch(patterns["password_hash"], root_hash):
         raise ValueError("The root console password requires a SHA512 crypt digest.")
@@ -127,20 +129,37 @@ def render_text(flavor, site, disk, kind, lab=False, passphrase=None, disk_gb=No
     if passphrase is not None:
         validate_luks_passphrase(passphrase)
     definition = json.loads((ROOT / "flavors" / f"{flavor}.json").read_text())
+    splash = site.get("boot_splash", not lab)
     storage = layout(disk_gb, lab)
     files = ""
-    for name in ("baseline.sh", "branding.sh", "harden.sh", "audit.sh", "failure.sh", "export.sh", "result_gate.py", "native_checks.py"):
+    for name in ("baseline.sh", "branding.sh", "plymouth.sh", "harden.sh", "audit.sh", "failure.sh", "export.sh", "result_gate.py", "native_checks.py"):
         files += file_fragment("/usr/local/libexec/balboa/" + name, (ROOT / "guest" / name).read_text(), True)
     assets = branding.images(site.get("branding_text", "Balboa"))
     files += f"install -d -m 0755 {branding.BOOT_DIR}\n"
     files += file_fragment(branding.BOOT_DIR + "/boot.png", assets["boot.png"], mode="0644")
     files += file_fragment(branding.BOOT_DIR + "/theme.txt", branding.GRUB_THEME, mode="0644")
+    files += file_fragment(branding.BOOT_DIR + "/inter.pf2", branding.grub_font(), mode="0644")
+    files += "install -d -m 0755 /usr/share/licenses/balboa-inter\n"
+    files += file_fragment("/usr/share/licenses/balboa-inter/OFL.txt",
+                           (ROOT / "assets/fonts/OFL.txt").read_bytes(), mode="0644")
+    if splash or definition["desktop"]:
+        files += "install -d -m 0755 /usr/share/fonts/balboa\n"
+        files += file_fragment("/usr/share/fonts/balboa/Inter-Regular.ttf", branding.FONT.read_bytes(), mode="0644")
+        files += file_fragment("/etc/fonts/conf.d/55-balboa-inter.conf",
+                               (ROOT / "guest/Inter.conf").read_text(), mode="0644")
+    if splash:
+        files += "install -d -m 0755 /usr/share/plymouth/themes/balboa\n"
+        for name in ("balboa.plymouth", "balboa.script"):
+            files += file_fragment("/usr/share/plymouth/themes/balboa/" + name,
+                                   (ROOT / "guest/plymouth" / name).read_text(), mode="0644")
     if definition["desktop"]:
         files += f"install -d -m 0755 {branding.DESKTOP_DIR}\n"
         for name in ("wallpaper.png", "login.png"):
             files += file_fragment(branding.DESKTOP_DIR + "/" + name, assets[name], mode="0644")
     for name in ("balboa-harden.service", "balboa-audit.service"):
         files += file_fragment("/etc/systemd/system/" + name, (ROOT / "guest" / name).read_text())
+    files += file_fragment("/usr/lib/systemd/system-generators/60-balboa-journal-upload",
+                           (ROOT / "guest/journal-upload-generator.sh").read_text(), True)
     profile_id, tailoring_xml = tailoring(flavor, definition["profile"])
     files += file_fragment("/etc/balboa/tailoring.xml", tailoring_xml)
     native = {"key_fingerprint": json.loads((ROOT / "sources.lock.json").read_text())["key_fingerprint"],
@@ -160,6 +179,8 @@ def render_text(flavor, site, disk, kind, lab=False, passphrase=None, disk_gb=No
     upload = site.get("journal_upload")
     if upload:
         files += "install -d -m 0755 /etc/systemd/journal-upload.conf.d\n"
+        files += file_fragment("/etc/systemd/system/systemd-journal-upload.service.d/40-balboa-network.conf",
+                               (ROOT / "guest/journal-upload-network.conf").read_text(), mode="0644")
         lines = ["[Upload]", "URL=" + upload["url"]]
         names = {"trusted_certificate_file": "TrustedCertificateFile", "client_certificate_file": "ServerCertificateFile"}
         for field, name in names.items():
@@ -178,7 +199,7 @@ def render_text(flavor, site, disk, kind, lab=False, passphrase=None, disk_gb=No
             lines += ["ServerKeyFile=-", "ServerCertificateFile=-"]
         files += file_fragment("/etc/systemd/journal-upload.conf.d/60-balboa.conf", "\n".join(lines) + "\n", mode="0644")
     conf = (f"FLAVOR={flavor}\nBASE_PROFILE={definition['profile']}\nPROFILE={profile_id}\nADMIN_USER={site['username']}\n"
-            f"DESKTOP={'yes' if definition['desktop'] else 'no'}\nLAB={'yes' if lab else 'no'}\n"
+            f"BOOT_SPLASH={'yes' if splash else 'no'}\nDESKTOP={'yes' if definition['desktop'] else 'no'}\nLAB={'yes' if lab else 'no'}\n"
             f"ROOT_PASSWORD_CONFIGURED={'yes' if site.get('root_password_hash') else 'no'}\n")
     files += file_fragment("/etc/balboa/image.conf", conf)
     source = ('url --url="https://dl.rockylinux.org/pub/rocky/10/BaseOS/x86_64/os/"\n'
@@ -188,13 +209,16 @@ def render_text(flavor, site, disk, kind, lab=False, passphrase=None, disk_gb=No
     values = {key.upper(): value for key, value in site.items()}
     values.update({"MODE": "cmdline" if lab else "text", "SOURCE": source, "DISK": disk,
                    "ROOTPW": "rootpw --iscrypted " + site["root_password_hash"],
-                   "CONSOLE": "console=tty0 console=ttyS0,115200n8" if lab else "",
+                   "CONSOLE": ("console=ttyS0,115200n8 console=tty0" if splash else
+                               "console=tty0 console=ttyS0,115200n8") if lab else "",
+                   "BOOT_APPEARANCE": ("rhgb quiet loglevel=3 systemd.show_status=auto rd.systemd.show_status=auto "
+                                       "plymouth.ignore-serial-consoles" if splash else "plymouth.enable=0"),
                    "PASSPHRASE": (f' --passphrase="{passphrase}"' if lab else
                                   " --passphrase=" + shlex.quote(passphrase) if passphrase is not None else ""),
                    "DISPLAY": "xconfig --startxonboot" if definition["desktop"] else "skipx",
                    "PV_MIB": str(storage["pv_mib"]), "BOOT_MIB": str(storage["boot_mib"]),
                    "VOLUMES": kickstart_volumes(storage),
-                   "PACKAGES": "\n".join(definition["packages"] + ["-" + p for p in definition["exclude"]]), "FILES": files})
+                   "PACKAGES": "\n".join(definition["packages"] + (["plymouth-theme-script", "plymouth-plugin-label", "plymouth-scripts", "fontconfig"] if splash else []) + ["-" + p for p in definition["exclude"]]), "FILES": files})
     template = (ROOT / "kickstarts/base.ks.in").read_text()
     field = r"@@([A-Z_]+)@@"
     if set(re.findall(field, template)) - set(values) or "@@" in re.sub(field, "", template):
@@ -246,10 +270,12 @@ def render(args):
                                       "client_key_file": "/etc/pki/balboa/client.key"}
     else:
         disk = args.disk
-    site = {**site, "branding_text": branding_text}
+    site = {**site, "branding_text": branding_text,
+            "boot_splash": args.boot_splash if args.boot_splash is not None else (site or {}).get("boot_splash", not args.lab)}
     (output / "branding").mkdir()
     for name, data in assets.items():
         (output / "branding" / name).write_bytes(data)
+    (output / "branding" / "inter.pf2").write_bytes(branding.grub_font())
     text, definition = render_text(args.flavor, site, disk, args.kind, args.lab, passphrase, args.disk_size_gb, lab_tls)
     if not args.lab:
         passphrase = site.get("luks_passphrase")
@@ -262,6 +288,7 @@ def render(args):
                 "root_console_password_configured": bool(site.get("root_password_hash")),
                 "journal_upload_configured": bool(site.get("journal_upload")),
                 "branding": branding.record(branding_text),
+                "boot_splash": site["boot_splash"],
                 "policy_deviations": EXCLUSIONS,
                 "disk": disk, "source_kind": args.kind,
                 "storage": layout(args.disk_size_gb, args.lab),

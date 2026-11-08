@@ -13,7 +13,7 @@ selinux --enforcing
 firewall --enabled
 services --enabled=auditd,chronyd,firewalld --disabled=sshd,kdump
 firstboot --disable
-bootloader --location=mbr --boot-drive=@@DISK@@ --iscrypted --password=@@BOOTLOADER_PASSWORD_HASH@@ --append="audit=1 audit_backlog_limit=8192 @@CONSOLE@@"
+bootloader --location=mbr --boot-drive=@@DISK@@ --iscrypted --password=@@BOOTLOADER_PASSWORD_HASH@@ --append="audit=1 audit_backlog_limit=8192 @@BOOT_APPEARANCE@@ @@CONSOLE@@"
 ignoredisk --only-use=@@DISK@@
 zerombr
 clearpart --all --initlabel --drives=@@DISK@@

@@ -11,10 +11,16 @@ if [[ "$DESKTOP" == yes ]]; then
 picture-uri='file:///usr/share/backgrounds/balboa/wallpaper.png'
 picture-uri-dark='file:///usr/share/backgrounds/balboa/wallpaper.png'
 picture-options='zoom'
+[org/gnome/desktop/interface]
+font-name='Inter 11'
+document-font-name='Inter 11'
 EOF
     cat > /etc/dconf/db/gdm.d/01-balboa-logo <<'EOF'
 [org/gnome/login-screen]
 logo='/usr/share/backgrounds/balboa/login.png'
+[org/gnome/desktop/interface]
+font-name='Inter 11'
+document-font-name='Inter 11'
 EOF
     cat > /etc/dconf/profile/gdm <<'EOF'
 user-db:user
@@ -28,6 +34,11 @@ EOF
     restorecon -RF /usr/share/backgrounds/balboa /etc/dconf
 fi
 
+if [[ -f /usr/share/fonts/balboa/Inter-Regular.ttf ]]; then
+    (umask 022; fc-cache -f /usr/share/fonts/balboa)
+fi
+bash /usr/local/libexec/balboa/plymouth.sh
+
 if systemd-detect-virt --container --quiet; then
     exit 0
 fi
@@ -39,7 +50,8 @@ import re
 path = Path('/etc/default/grub')
 content = re.sub(r'^GRUB_TERMINAL=.*\n?', '', path.read_text(), flags=re.MULTILINE)
 values = {'GRUB_THEME': '/boot/grub2/themes/balboa/theme.txt', 'GRUB_GFXMODE': 'auto',
-          'GRUB_TERMINAL_OUTPUT': 'gfxterm', 'GRUB_TIMEOUT_STYLE': 'menu', 'GRUB_TIMEOUT': '5'}
+          'GRUB_TERMINAL_OUTPUT': 'gfxterm', 'GRUB_TIMEOUT_STYLE': 'menu', 'GRUB_TIMEOUT': '2',
+          'GRUB_FONT': '/boot/grub2/themes/balboa/inter.pf2', 'GRUB_DISABLE_OS_PROBER': 'true'}
 for key, value in values.items():
     content = re.sub(r'^' + key + r'=.*\n?', '', content, flags=re.MULTILINE)
     content += f'\n{key}="{value}"\n'

@@ -204,6 +204,73 @@ class PipelineTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             render_text("laptop", self.site, "vda", "boot", True, "test5")
 
+    def test_boot_splash_defaults_opt_out_and_graphical_lab(self):
+        for flavor in ("server", "workstation", "laptop"):
+            for lab, enabled in ((False, True), (False, False), (True, False), (True, True)):
+                site = {**self.site}
+                if lab == enabled:
+                    site["boot_splash"] = enabled
+                text, _ = render_text(flavor, site, "vda", "boot", lab,
+                                      "a" * 40 if lab else None)
+                boot = next(line for line in text.splitlines() if line.startswith("bootloader "))
+                self.assertEqual("rhgb quiet" in boot, enabled)
+                self.assertEqual("plymouth.ignore-serial-consoles" in boot, enabled)
+                self.assertEqual("\nplymouth-theme-script\n" in text, enabled)
+                self.assertEqual("\nplymouth-plugin-label\n" in text, enabled)
+                self.assertEqual("\nfontconfig\n" in text, enabled)
+                self.assertIn("audit=1 audit_backlog_limit=8192", boot)
+                if lab:
+                    expected = ("console=ttyS0,115200n8 console=tty0" if enabled else
+                                "console=tty0 console=ttyS0,115200n8")
+                    self.assertIn(expected, boot)
+                if not enabled:
+                    self.assertIn("plymouth.enable=0", boot)
+
+    def test_boot_splash_requires_a_boolean(self):
+        for value in (None, 0, 1, "yes", []):
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                valid_site({**self.site, "boot_splash": value})
+
+    def test_automated_vm_rejects_graphical_unlock_before_creating_storage(self):
+        import hashlib
+        from types import SimpleNamespace
+        from balboa.vm import vm
+        iso = self.root / "graphical.iso"
+        iso.write_bytes(b"disposable ISO fixture")
+        iso.with_suffix(".json").write_text(json.dumps({
+            "iso_sha256": hashlib.sha256(iso.read_bytes()).hexdigest(),
+            "lab": True, "boot_splash": True}))
+        work = self.root / "vm"
+        with self.assertRaisesRegex(ValueError, "start-qemu.py"):
+            vm(SimpleNamespace(iso=iso, lab_secrets=None, workdir=work))
+        self.assertFalse(work.exists())
+
+    def test_branding_rejects_changed_source_assets(self):
+        from unittest.mock import patch
+        from balboa import branding
+        corrupt = self.root / "unapproved-photo.jpg"
+        corrupt.write_bytes(b"not the approved photo")
+        with patch.object(branding, "PHOTO", corrupt), self.assertRaisesRegex(ValueError, "does not match"):
+            branding.sources()
+
+    def test_upload_generator_removes_only_network_wait_dependencies(self):
+        repository = Path(__file__).resolve().parents[1]
+        vendor = self.root / "vendor.service"
+        vendor.write_text("[Unit]\nWants=network-online.target other.service\nAfter=network-online.target other.service\nRequires=secure.service\n[Service]\nDynamicUser=yes\nPrivateDevices=yes\nExecStart=/usr/lib/systemd/systemd-journal-upload --save-state\n")
+        program = self.root / "generator"
+        program.write_text((repository / "guest/journal-upload-generator.sh").read_text().replace(
+            "/usr/lib/systemd/system/systemd-journal-upload.service", str(vendor)))
+        output = self.root / "generated units"
+        subprocess.run(["sh", str(program), str(output)], check=True)
+        unit = (output / "systemd-journal-upload.service").read_text()
+        self.assertNotIn("network-online.target", unit)
+        self.assertIn("Wants=other.service", unit)
+        self.assertIn("After=other.service network.target", unit)
+        self.assertIn("Requires=secure.service", unit)
+        self.assertIn("DynamicUser=yes", unit)
+        self.assertIn("PrivateDevices=yes", unit)
+        self.assertIn("ExecStart=/usr/lib/systemd/systemd-journal-upload --save-state", unit)
+
     def test_branding_rejects_controls_and_escapes_literal_text(self):
         from balboa import branding
         for value in (None, "", " ", "a" * 65, "text\n%post", 12):
@@ -226,12 +293,16 @@ class PipelineTests(unittest.TestCase):
         site.write_text(json.dumps({**self.site, "branding_text": "Site label"}))
         output = self.root / "branded"
         args = parser().parse_args(["render", "--flavor", "laptop", "--site", str(site),
-                                   "--disk", "vda", "--output", str(output), "--branding-text", "Test & Lab"])
+                                   "--disk", "vda", "--output", str(output), "--branding-text", "Test & Lab", "--no-boot-splash"])
         with contextlib.redirect_stdout(io.StringIO()):
             render(args)
-        manifest = json.loads((output / "installation.json").read_text())["branding"]
+        metadata = json.loads((output / "installation.json").read_text())
+        self.assertFalse(metadata["boot_splash"])
+        manifest = metadata["branding"]
         self.assertEqual(manifest["text"], "Test & Lab")
-        self.assertEqual({p.name for p in (output / "branding").iterdir()}, set(branding.SIZES))
+        self.assertTrue((output / "branding/inter.pf2").read_bytes().startswith(b"FILE"))
+        self.assertEqual(manifest["sources"]["font"]["version"], "4.1")
+        self.assertEqual({p.name for p in (output / "branding").glob("*.png")}, set(branding.SIZES))
         ks = (output / "installation.ks").read_text()
         for name, size in branding.SIZES.items():
             data = (output / "branding" / name).read_bytes()

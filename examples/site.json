@@ -1,4 +1,5 @@
 {
+  "boot_splash": true,
   "branding_text": "Balboa",
   "hostname": "rocky.example.test",
   "username": "adminuser",

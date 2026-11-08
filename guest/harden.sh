@@ -33,6 +33,7 @@ if [[ "$FLAVOR" == server ]]; then
     firewall-cmd --permanent --zone=drop --add-service=ssh
     systemctl enable sshd.service
 fi
+systemctl disable balboa-harden.service
 grep -qxF '!/var/lib/balboa' /etc/aide.conf || printf '\n!/var/lib/balboa\n' >> /etc/aide.conf
 aide --init
 mv /var/lib/aide/aide.db.new.gz /var/lib/aide/aide.db.gz

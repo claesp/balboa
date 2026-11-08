@@ -7,7 +7,8 @@ QEMU supplies a virtual machine for installation tests.
 The host requires these tools:
 
 - Python 3.11 or later
-- ImageMagick with SVG support and the DejaVu Sans font
+- ImageMagick with SVG support and Fontconfig
+- `grub2-mkfont` or `grub-mkfont` for the Inter boot font
 - Curl and GnuPG
 - Podman
 - OpenSSL and OpenSSH tools
@@ -113,6 +114,8 @@ python3 -m balboa iso build/production-server/installation.ks --output build/bal
 The render step also creates three PNG images under the output directory in `branding/`.
 Set `branding_text` in the site file to put your text below the logo.
 See [Boot and desktop images](branding.md) for image locations and the command override.
+Production renders enable Plymouth by default.
+Use `--no-boot-splash` for a text boot without the Plymouth packages.
 
 For workstations, replace `server` with `workstation` and use a new output directory.
 For laptops, replace `server` with `laptop` and use a new output directory.

@@ -6,7 +6,6 @@
     "gnome-session",
     "gnome-settings-daemon",
     "gnome-control-center",
-    "nautilus",
     "ptyxis",
     "gnome-keyring",
     "gnome-keyring-pam",
@@ -32,7 +31,10 @@
     "openssh-server",
     "cups",
     "avahi",
-    "postfix"
+    "postfix",
+    "nautilus",
+    "qemu-guest-agent",
+    "nvidia-gpu-firmware"
   ],
   "desktop": true
 }

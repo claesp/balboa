@@ -8,7 +8,7 @@ For an ISO installation in a QEMU window, use [Interactive QEMU tests](qemu.md).
 ## Local tests
 
 Operate this command on the Linux build host.
-The tests require Python 3.11 or later, ImageMagick with SVG support, and the DejaVu Sans font.
+The tests require Python 3.11 or later, ImageMagick with SVG support, Fontconfig, and a GRUB font converter.
 The tests do not require network access or administrator privileges.
 
 ```sh

@@ -6,7 +6,7 @@ The tests use authenticated Rocky Linux 10.2 boot and DVD media.
 
 ## Completed tests
 
-The local suite contains 41 passing tests.
+The local suite contains 46 passing tests.
 It includes site input restrictions, report assessment, guest archive restrictions, and expected OpenSCAP exit handling.
 The suite also tests the serial unlock procedure and installer error detection.
 The local suite accepts matching root console and administrator password digests for all three flavors.
@@ -223,3 +223,70 @@ The branded laptop DVD ISO has this SHA256 digest:
 ```text
 8241deb0ca20d5cc6c09084ef9223b188f518cec116c1fbcf38397f4771c4d3e
 ```
+
+## Photo, Inter, and graphical startup
+
+The November 8 revision uses a fixed Unsplash mountain photo and the official Inter 4.1 font.
+The renderer creates 1920 × 1080 boot, 2560 × 1440 wallpaper, and 640 × 180 login images.
+It also creates an Inter bitmap font for GRUB.
+Source digests and licenses reside under `assets/`.
+
+All 46 local tests pass.
+The tests cover source digests, image dimensions, splash defaults, and the restriction on automatic graphical unlock.
+They also assess the journal generator with a representative vendor unit.
+The generator removes network readiness dependencies and preserves other dependencies and service restrictions.
+
+All three final Kickstart files pass the Rocky parser and package solver.
+The solver resolves 306 server packages, 557 workstation packages, and 591 laptop packages.
+These totals describe the selected installation packages and their dependencies.
+The installed system also contains packages that the installer adds.
+
+All three final installation scripts pass the disposable Podman test.
+The tests include Inter discovery, GNOME defaults, Plymouth selection, and the final generator installation.
+All guest shell programs pass syntax tests.
+
+A fresh 32 GB UEFI server installation completes with the new photo and Plymouth base.
+The final font lookup correction and journal generator receive separate tests on an isolated laptop snapshot.
+These tests use the previous branded laptop as the snapshot source.
+They do not replace a fresh installation test for every final flavor and firmware combination.
+
+QEMU shows the new GDM photo banner and the exact `Powered by Rocky Linux` phrase.
+The GNOME session shows the resized wallpaper and Inter text.
+The early disk prompt shows readable Inter text and masked characters.
+Esc switches to the text view, and captured startup frames show the animated spinner.
+
+The first graphical prompt test exposed missing early font lookup support.
+The final initramfs includes Inter, Fontconfig configuration, `fc-match`, and the packaged FreeType label renderer.
+The tests retain SELinux enforcement throughout these changes.
+
+The final laptop assessment records 429 passing controls, three not applicable controls, and no findings.
+The native package tests and encrypted LVM assessment pass.
+The system reports enforcing SELinux, zero failed units, and an active authenticated journal upload service.
+The assessment includes the final journal generator and converted Inter font.
+
+The final evidence resides under `build/plymouth-test/` and remains outside version control.
+The package and installation records use the `final-FLAVOR-validation.log` and `final-FLAVOR-smoke.log` names.
+The visual records reside in the `vm/` directory.
+The final security reports reside in `vm/collected-generator-assessment/evidence/`.
+
+## Startup measurements
+
+The GRUB configuration reduces its menu wait from five seconds to two seconds.
+The image disables repeated startup of the completed hardening service before AIDE initialization.
+The journal generator removes the upload service dependency on network readiness.
+The service retains its vendor restrictions and retries failed connections after 15 seconds.
+
+An earlier ordinary boot records 3.625 seconds in userspace.
+A graphical boot records 3.951 seconds in userspace before the disconnected-network test.
+The graphical interface adds some work and does not show a userspace speed improvement in this comparison.
+Manual LUKS entry changes the early boot duration, so these tests do not establish a total startup speed improvement.
+
+With the virtual network link disconnected, the final image reaches its graphical target in 9.011 seconds of userspace time.
+The previous dependency leaves the same offline test waiting for network readiness.
+The final upload service waits between retries while GNOME remains available.
+The offline test reports Inter for both GNOME and GDM and disables repeated hardening startup.
+
+After the link returns, the upload service becomes active without a manual restart.
+The local TLS receiver contains the event that the test writes while offline.
+The collector binds only to `127.0.0.1:19532` on the build host.
+The restored system reports zero failed units and enforcing SELinux.

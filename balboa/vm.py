@@ -136,6 +136,8 @@ def vm(args):
         raise ValueError("The custom ISO does not match its manifest.")
     if args.lab_secrets and not manifest["lab"]:
         raise ValueError("Lab credentials cannot unlock a production installation.")
+    if manifest.get("boot_splash"):
+        raise ValueError("Use scripts/start-qemu.py for graphical splash media and disk unlock. Omit --boot-splash for automated lab tests.")
     if not manifest["lab"]:
         raise ValueError("The automated VM command requires disposable lab media. Use the manual procedure for production media.")
     if args.phase == "boot" and args.lab_secrets is None:
