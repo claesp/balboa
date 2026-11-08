@@ -3,6 +3,7 @@
 Podman tests the installation syntax and packaged security content.
 QEMU tests the installer, kernel, storage, and installed services.
 A container does not supply evidence of full system conformance.
+For an ISO installation in a QEMU window, use [Interactive QEMU tests](qemu.md).
 
 ## Local tests
 

@@ -60,6 +60,7 @@ Use these documents for each project task:
 | Supply credentials and central logging configuration | [Site configuration](docs/site.md) |
 | Examine security controls and release conditions | [Security policy](docs/security.md) |
 | Do Podman and QEMU tests | [Testing](docs/testing.md) |
+| Start a laptop ISO in a QEMU window | [Interactive QEMU tests](docs/qemu.md) |
 | Examine recorded results and remaining hardware tests | [Verification record](docs/verification.md) |
 | Change sources, packages, and security content | [Maintenance](docs/maintenance.md) |
 

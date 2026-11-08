@@ -6,10 +6,11 @@ The source media is the authenticated Rocky Linux 10.2 boot ISO.
 
 ## Completed tests
 
-The local suite contains 25 passing tests.
+The local suite contains 31 passing tests.
 It includes site input restrictions, report assessment, guest archive restrictions, and expected OpenSCAP exit handling.
 The suite also tests the serial unlock procedure and installer error detection.
 The local suite accepts matching root console and administrator password digests for all three flavors.
+Six launcher tests cover disk preservation, manifest constraints, boot reuse, and private UEFI variable files.
 
 All three flavors pass the RHEL10 Kickstart parser.
 All guest shell programs pass Bash syntax tests.
@@ -63,6 +64,16 @@ The tests retain SELinux enforcement throughout both corrections.
 The production policy requires a root console password.
 Production log receiver values remain deployment-time configuration.
 The lab images use disposable root passwords and a local authenticated receiver.
+
+## Interactive launcher results
+
+The interactive script passes QEMU device initialization for BIOS and UEFI.
+Each firmware mode accepts the `vda`, `sda`, and `nvme0n1` disk devices.
+The startup tests use the laptop DVD ISO, temporary disks, a headless display, and paused guest CPUs.
+
+These startup tests do not replace the full installation and security assessments recorded in this document.
+The GTK window requires examination in a graphical host session.
+See [Interactive QEMU tests](qemu.md) for the installation and later boot commands.
 
 ## Content identity
 
