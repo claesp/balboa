@@ -2,7 +2,7 @@
 
 The test session covers November 7 and November 8, 2026.
 The build host uses x86_64 Linux with QEMU, Podman, and KVM.
-The source media is the authenticated Rocky Linux 10.2 boot ISO.
+The tests use authenticated Rocky Linux 10.2 boot and DVD media.
 
 ## Completed tests
 
@@ -28,7 +28,7 @@ All three flavors pass the package availability test against official BaseOS and
 The ISO tests accept the embedded Kickstart contents for all three flavors.
 The tests also accept the BIOS and UEFI optical boot structures.
 
-All three current minimal flavors complete installation on fixed 32 GB encrypted LVM disks.
+The earlier acceptance images complete installation on fixed 32 GB encrypted LVM disks.
 The server and laptop complete BIOS installation.
 The workstation completes UEFI installation.
 
@@ -37,7 +37,8 @@ The scripts use a separate administrator identity and explicit audit and SELinux
 
 ## Automatic assessment results
 
-Each final image completes remediation, AIDE initialization, and an automatic restart.
+The following results describe the earlier acceptance images under `build/acceptance/`.
+Each image completes remediation, AIDE initialization, and an automatic restart.
 The next boot does an assessment without remediation.
 The final results contain no failed, erroneous, unknown, or untested selected rules.
 
@@ -86,7 +87,7 @@ See [Interactive QEMU tests](qemu.md) for the installation and later boot comman
 
 The laptop DVD completes installation on a 128 GB NVMe disk with UEFI.
 The recorded test uses revision `51f764f` with disposable credentials and its former passphrase-file input.
-The current `luks_passphrase` site field exactly reproduces that tested Kickstart.
+The `luks_passphrase` site field reproduces the tested storage commands.
 The keyboard layout is Swedish `se`.
 
 The guest disk is `nvme0n1` and contains exactly 128000000000 bytes.
@@ -122,7 +123,7 @@ Each built ISO has a separate manifest and package record.
 Each installed assessment records its own content digest and package list.
 
 The implementation revision is `f9bc899`.
-The current renderer exactly reproduces all three tested Kickstart files.
+These earlier images precede the generated branding assets.
 All three assessments use this datastream SHA256 digest:
 
 ```text
@@ -139,7 +140,7 @@ These SHA256 digests identify the exact disposable ISO files from this session:
 
 ## Local artifacts
 
-The final ISO files use `build/balboa-FLAVOR-acceptance-lab.iso`.
+The earlier acceptance ISO files use `build/balboa-FLAVOR-acceptance-lab.iso`.
 Replace `FLAVOR` with `server`, `workstation`, or `laptop`.
 Each ISO has a matching JSON manifest and tool package list.
 
@@ -204,3 +205,21 @@ The test VM receives security content updates through the official Rocky reposit
 The updated packages are `scap-security-guide-0.1.82-2.el10_2.rocky.1.1` and `openscap-scanner-1.4.4-1.el10_2`.
 The GNOME session shows the generated default wallpaper after login.
 The installed image digests match the render manifest after hardening.
+
+After the content update, the branded laptop completes remediation and a fresh assessment after restart.
+The assessment records 429 passing controls, three not applicable controls, and no findings.
+The native Rocky tests, encrypted LVM tests, and package boundary tests pass.
+
+The final system reports enforcing SELinux and zero failed systemd units.
+The authenticated journal upload service reports an active state and a successful result.
+The test session stops its temporary receiver after assessment.
+
+The updated results reside in `build/branding-test/vm-laptop-uefi/collected/evidence/`.
+The boot, login, and desktop screenshots remain in that VM directory.
+The branding implementation revision is `6368828`.
+
+The branded laptop DVD ISO has this SHA256 digest:
+
+```text
+8241deb0ca20d5cc6c09084ef9223b188f518cec116c1fbcf38397f4771c4d3e
+```
