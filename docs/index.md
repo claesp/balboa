@@ -1,5 +1,7 @@
 # Balboa
 
+Start at the [project overview](../README.md) for the main documentation links.
+
 Balboa creates custom Rocky Linux 10 installation images.
 Kickstart is a file that controls an installation.
 An ISO is a file that contains installation media.
