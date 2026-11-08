@@ -28,6 +28,7 @@ class PipelineTests(unittest.TestCase):
         blob = b"\x00\x00\x00\x0bssh-ed25519\x00\x00\x00\x20" + bytes(range(32))
         self.site = {"hostname": "host.example.test", "username": "adminuser",
                      "password_hash": "$6$salt$" + "a" * 86,
+                     "root_password_hash": "$6$rootsalt$" + "b" * 86,
                      "bootloader_password_hash": "grub.pbkdf2.sha512.100000." + "A" * 128 + "." + "B" * 128,
                      "ssh_public_key": "ssh-ed25519 " + base64.b64encode(blob).decode(),
                      "timezone": "UTC", "keyboard": "us", "language": "en_US.UTF-8"}
@@ -79,20 +80,27 @@ class PipelineTests(unittest.TestCase):
             with self.subTest(uid=uid,gid=gid,mode=mode), self.assertRaises(ValueError):
                 validate_key_access(SimpleNamespace(st_uid=uid, st_gid=gid, st_mode=mode), 321)
 
-    def test_optional_root_and_logging_configuration(self):
-        site = {**self.site, "root_password_hash": self.site["password_hash"],
+    def test_required_root_and_optional_logging_configuration(self):
+        site = {**self.site,
                 "journal_upload": {"url": "https://logs.example.test:19532",
                                    "trusted_certificate_file": "/etc/pki/balboa/ca.pem",
                                    "client_certificate_file": "/etc/pki/balboa/client.pem",
                                    "client_key_file": "/etc/pki/balboa/client.key"}}
         valid_site(site)
         text, _ = render_text("server", site, "vda", "boot")
-        self.assertIn("rootpw --iscrypted " + self.site["password_hash"], text)
+        self.assertIn("rootpw --iscrypted " + self.site["root_password_hash"], text)
         self.assertIn("/etc/systemd/journal-upload.conf.d/60-balboa.conf", text)
         self.assertIn("install -d -m 0755 /etc/systemd/journal-upload.conf.d", text)
         self.assertIn("/etc/systemd/system/systemd-journal-upload.service.d/60-balboa-credentials.conf", text)
         with self.assertRaises(ValueError):
             valid_site({**site, "root_password_hash": "plaintext"})
+
+    def test_site_requires_a_separate_root_console_password(self):
+        without_root = {k:v for k,v in self.site.items() if k != "root_password_hash"}
+        for site in (without_root, {**self.site, "root_password_hash": ""},
+                     {**self.site, "root_password_hash": self.site["password_hash"]}):
+            with self.subTest(site=site), self.assertRaises(ValueError):
+                valid_site(site)
 
     def test_disposable_tls_never_enters_production_or_uses_other_paths(self):
         tls = {"ca.pem": "test CA", "client.pem": "test certificate", "client.key": "test private key"}

@@ -53,6 +53,9 @@ ssh-keygen -t ed25519 -f ~/.ssh/balboa_operator
 ```
 
 Put the password digest in `password_hash` in `site.json`.
+Create another digest with `openssl passwd -6` for a separate root console password.
+Put that digest in `root_password_hash` in `site.json`.
+Retain the root password in the approved recovery vault.
 Put the public key contents in `ssh_public_key` in `site.json`.
 Set the hostname and local language fields in `site.json`.
 Use a separate administrator name that does not identify a system account.
@@ -72,6 +75,8 @@ Keep that password in the approved recovery vault.
 
 Set the recovery and central logging fields through [Site configuration](site.md).
 These fields address selected CIS controls that require site decisions.
+Central logging values can remain absent until deployment.
+The security assessment requires completed logging configuration before release.
 
 Do not copy the private SSH key into an image.
 The private key permits access to systems that trust its public key.

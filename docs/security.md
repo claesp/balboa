@@ -54,10 +54,10 @@ The firmware and boot partitions remain unencrypted.
 
 Separate filesystems contain `/home`, `/tmp`, `/var`, `/var/tmp`, `/var/log`, and `/var/log/audit`.
 Temporary filesystems reject direct program execution through the `noexec` mount flag.
-The root account stays locked unless the site supplies a separate console password digest.
-The selected CIS profile requires a root password for recovery.
-A locked root account therefore produces a reported finding.
-SSH rejects root login in both cases.
+Each image requires a separate root console password digest.
+The selected recovery policy requires this password for local recovery.
+The renderer rejects an absent root digest or a digest identical to the administrator digest.
+SSH rejects root login.
 
 GRUB requires a password for changes to boot commands.
 The site file supplies its PBKDF2 password digest.

@@ -10,13 +10,13 @@ See [Build and installation](build.md) before you create production media.
 
 ## Root console recovery
 
-The optional `root_password_hash` field accepts a SHA512 crypt password digest.
+The required `root_password_hash` field accepts a SHA512 crypt password digest.
 The digest uses the same format as `password_hash`.
 Use a separate root password and retain it in the site recovery vault.
 
-Without this field, the installer locks the root account.
-The selected CIS profile reports a finding for that locked account.
-The project does not silently exclude this rule.
+The renderer rejects a missing digest and a digest identical to the administrator digest.
+Different salted digests do not prove different passwords.
+The site must assign separate passwords through its recovery procedure.
 
 The root password permits local console recovery.
 SSH root login remains disabled.
@@ -50,7 +50,7 @@ Use mode `0644` for public certificates.
 Give the private key root ownership, group `balboa-logs`, and mode `0640`.
 Use mode `0755` for directories that contain public certificates.
 
-The installer creates the `balboa-logs` group.
+If the site file names a client key, the installer creates the `balboa-logs` group.
 Only the journal upload service receives this group through its service definition.
 Do not add interactive users to this group.
 The native assessment requires the specified key ownership and access mode.
@@ -80,6 +80,69 @@ This protocol restriction does not disable TLS.
 The installer enables upload only when the site supplies this object.
 Without this object, the security assessment reports the selected upload control as a finding.
 The receiver service and socket remain masked on each installed system.
+
+## Configuration at deployment
+
+Production images can omit `journal_upload` until deployment.
+The image contains no assumed receiver address or client key.
+The security assessment requires completed logging configuration before release.
+
+Use the local console for the following procedure.
+The example uses client certificates and the standard paths from this document.
+
+Create the group and configuration directories on the installed system:
+
+```sh
+getent group balboa-logs >/dev/null || sudo groupadd --system balboa-logs
+sudo install -d -m 0755 /etc/pki/balboa /etc/systemd/journal-upload.conf.d /etc/systemd/system/systemd-journal-upload.service.d
+sudoedit /etc/systemd/journal-upload.conf.d/60-balboa.conf
+```
+
+Put this content in the upload file.
+Replace the example address with the deployment receiver address.
+
+```ini
+[Upload]
+URL=https://logs.example.test:19532
+TrustedCertificateFile=/etc/pki/balboa/ca.pem
+ServerCertificateFile=/etc/pki/balboa/client.pem
+ServerKeyFile=/etc/pki/balboa/client.key
+```
+
+Create the service file with this command:
+
+```sh
+sudoedit /etc/systemd/system/systemd-journal-upload.service.d/60-balboa-credentials.conf
+```
+
+Put this content in the service file:
+
+```ini
+[Service]
+SupplementaryGroups=balboa-logs
+```
+
+Provision the CA certificate, client certificate, and private key through approved site storage.
+Apply the access modes and SELinux labels from the preceding section.
+Add the key path to the native policy through this command:
+
+```sh
+sudo python3 - <<'PY'
+import json
+from pathlib import Path
+path = Path('/etc/balboa/native-policy.json')
+policy = json.loads(path.read_text())
+policy['journal_client_key'] = '/etc/pki/balboa/client.key'
+path.write_text(json.dumps(policy, indent=2) + '\n')
+path.chmod(0o600)
+PY
+sudo chmod 0644 /etc/systemd/journal-upload.conf.d/60-balboa.conf /etc/systemd/system/systemd-journal-upload.service.d/60-balboa-credentials.conf
+sudo restorecon -RF /etc/pki/balboa /etc/systemd /etc/balboa
+sudo systemctl daemon-reload
+sudo systemctl enable systemd-journal-upload.service
+```
+
+Do the delivery test and repeat remediation through the following procedure.
 
 ## Delivery test
 

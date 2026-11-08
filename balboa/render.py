@@ -26,15 +26,17 @@ def valid_site(site):
         "keyboard": r"[A-Za-z0-9_-]+",
         "language": r"[a-z]{2}_[A-Z]{2}\.UTF-8",
     }
-    optional = {"root_password_hash", "journal_upload"}
-    if not set(patterns) <= set(site) or set(site) - set(patterns) - optional:
+    required = set(patterns) | {"root_password_hash"}
+    if not required <= set(site) or set(site) - required - {"journal_upload"}:
         raise ValueError("The site file contains missing or unknown fields.")
     for key, pattern in patterns.items():
         if not isinstance(site[key], str) or not re.fullmatch(pattern, site[key]):
             raise ValueError(f"The site field {key} is not permitted.")
-    root_hash = site.get("root_password_hash", "")
-    if not isinstance(root_hash, str) or (root_hash and not re.fullmatch(patterns["password_hash"], root_hash)):
+    root_hash = site["root_password_hash"]
+    if not isinstance(root_hash, str) or not re.fullmatch(patterns["password_hash"], root_hash):
         raise ValueError("The root console password requires a SHA512 crypt digest.")
+    if root_hash == site["password_hash"]:
+        raise ValueError("The root console and administrator passwords require separate digests.")
     upload = site.get("journal_upload")
     if upload is not None:
         allowed = {"url", "trusted_certificate_file", "client_certificate_file", "client_key_file"}
@@ -138,7 +140,7 @@ def render_text(flavor, site, disk, kind, lab=False, passphrase=None, disk_gb=No
         source = "cdrom"
     values = {key.upper(): value for key, value in site.items()}
     values.update({"MODE": "cmdline" if lab else "text", "SOURCE": source, "DISK": disk,
-                   "ROOTPW": "rootpw --iscrypted " + site["root_password_hash"] if site.get("root_password_hash") else "rootpw --lock",
+                   "ROOTPW": "rootpw --iscrypted " + site["root_password_hash"],
                    "CONSOLE": "console=tty0 console=ttyS0,115200n8" if lab else "",
                    "PASSPHRASE": f' --passphrase="{passphrase}"' if lab else "",
                    "DISPLAY": "xconfig --startxonboot" if definition["desktop"] else "skipx",
