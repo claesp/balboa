@@ -1,6 +1,7 @@
 import io
 import json
 from pathlib import Path
+import shutil
 import tarfile
 import tempfile
 import subprocess
@@ -310,6 +311,11 @@ class PipelineTests(unittest.TestCase):
             self.assertEqual(struct.unpack(">II", data[16:24]), size)
             self.assertEqual(manifest["images"][name]["sha256"], hashlib.sha256(data).hexdigest())
             self.assertIn(base64.b64encode(data).decode(), ks)
+        alpha = subprocess.run([
+            shutil.which("magick") or shutil.which("convert"), str(output / "branding/login.png"),
+            "-format", "%[fx:minima.a] %[fx:maxima.a] %[fx:p{0,0}.a]", "info:"],
+            capture_output=True, text=True, check=True).stdout
+        self.assertEqual(alpha, "0 1 0")
         server, _ = render_text("server", self.site, "vda", "boot")
         self.assertIn(branding.BOOT_DIR + "/boot.png", server)
         self.assertNotIn(" > " + branding.DESKTOP_DIR + "/wallpaper.png", server)

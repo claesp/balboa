@@ -102,12 +102,15 @@ def images(text):
             raise ValueError("Fontconfig cannot find the bundled Inter font.")
         for name, dimensions in SIZES.items():
             width, height = dimensions
-            shade = "B8" if name == "boot.png" else "85" if name == "login.png" else "35"
-            converted = subprocess.run([
-                tool, str(PHOTO), "-auto-orient", "-resize", f"{width}x{height}^",
-                "-gravity", "center", "-extent", f"{width}x{height}",
-                "-fill", "#07121f" + shade, "-draw", f"rectangle 0,0 {width},{height}",
-                "(", "-background", "none", "svg:-", ")", "-compose", "over", "-composite",
+            command = [tool, "-background", "none", "svg:-"]
+            if name != "login.png":
+                shade = "B8" if name == "boot.png" else "35"
+                command = [
+                    tool, str(PHOTO), "-auto-orient", "-resize", f"{width}x{height}^",
+                    "-gravity", "center", "-extent", f"{width}x{height}",
+                    "-fill", "#07121f" + shade, "-draw", f"rectangle 0,0 {width},{height}",
+                    "(", "-background", "none", "svg:-", ")", "-compose", "over", "-composite"]
+            converted = subprocess.run(command + [
                 "-strip", "-define", "png:compression-level=9", "png32:-"],
                 input=vector(text, name).encode(), capture_output=True, env=environment)
             data = converted.stdout

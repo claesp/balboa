@@ -2,7 +2,8 @@
 
 The render command creates three PNG images.
 PNG is a format for image files.
-The images use a fixed Unsplash mountain photo, a geometric logo, and your text below it.
+The boot image and wallpaper use a fixed Unsplash mountain photo.
+All three images show a geometric logo and your text below it.
 
 The render host requires ImageMagick with SVG support, Fontconfig, and `grub2-mkfont` or `grub-mkfont`.
 The repository supplies the Inter font files.
@@ -49,7 +50,8 @@ The server installs only the boot image.
 The workstation and laptop install all three images.
 
 The login image includes the exact phrase `Powered by Rocky Linux`.
-The login banner uses a separate crop of the mountain photo.
+The login banner has a transparent background.
+Only the logo and text remain visible over the GDM background.
 GDM shows the image in its logo area.
 
 The renderer embeds the images into the Kickstart file.
