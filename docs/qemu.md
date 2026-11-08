@@ -1,5 +1,8 @@
 # Interactive QEMU tests
 
+To remove an obsolete VM directory, use the selected-path procedure in [Clean generated files](clean.md).
+The clean command shows its paths before removal and requires `--apply` to erase them.
+
 The script `scripts/start-qemu.py` starts an ISO in a QEMU window.
 An ISO is a file that contains installation media.
 The script creates a disposable virtual disk and retains it for later boots.

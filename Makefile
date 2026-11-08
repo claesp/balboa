@@ -1,7 +1,10 @@
-.PHONY: test tools lab validate
+.PHONY: test tools lab validate clean
 
 test:
 	python3 -m unittest discover -s tests -v
+
+clean:
+	python3 -m balboa clean --apply
 
 tools:
 	python3 -m balboa tools

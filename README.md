@@ -66,6 +66,7 @@ Use these documents for each project task:
 | Start a laptop ISO in a QEMU window | [Interactive QEMU tests](docs/qemu.md) |
 | Examine recorded results and remaining hardware tests | [Verification record](docs/verification.md) |
 | Change sources, packages, and security content | [Maintenance](docs/maintenance.md) |
+| Preview or remove obsolete build files | [Clean generated files](docs/clean.md) |
 
 ## Repository contents
 

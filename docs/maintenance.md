@@ -22,6 +22,9 @@ The renderer accepts restricted site fields.
 It does not interpret site values as shell commands.
 The generated files use access permissions for the build account only.
 
+Use [Clean generated files](clean.md) to preview and remove obsolete local outputs.
+The clean command retains generated images and virtual disks unless you select them explicitly.
+
 ## Change a flavor
 
 Edit the relevant file in `flavors/` on the build host.

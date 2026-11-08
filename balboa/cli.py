@@ -13,6 +13,7 @@ import tempfile
 from .render import render
 from .vm import vm
 from .lab import lab_logger
+from .clean import clean
 
 ROOT = Path(__file__).resolve().parent.parent
 LOCK = ROOT / "sources.lock.json"
@@ -203,6 +204,12 @@ def parser():
     logger.add_argument("--port", type=int, default=19532)
     logger.add_argument("--stop", action="store_true")
     logger.set_defaults(func=lab_logger)
+    cleanup = commands.add_parser("clean", help="Preview or remove generated project files.")
+    cleanup.add_argument("--build", action="store_true", help="Select all build outputs, including virtual disks and credentials.")
+    cleanup.add_argument("--cache", action="store_true", help="Select cached official media and signature files.")
+    cleanup.add_argument("--path", type=Path, action="append", default=[], help="Select a file or directory under project build/ or cache/. Repeat as needed.")
+    cleanup.add_argument("--apply", action="store_true", help="Remove the selected files. The default only shows a preview.")
+    cleanup.set_defaults(func=clean)
     return result
 
 

@@ -40,6 +40,7 @@ Balboa retains signature files in `cache/`.
 [Testing](testing.md) describes Podman and QEMU tests.
 [Interactive QEMU tests](qemu.md) describes the script for ISO installation and desktop access.
 [Maintenance](maintenance.md) describes source and policy changes.
+[Clean generated files](clean.md) describes output removal and disk space recovery.
 [Verification record](verification.md) records completed tests and release evidence.
 [Boot process](boot.md) describes the spinner, graphical disk prompt, and startup choices.
 [Boot and desktop images](branding.md) describes the generated logo, text, and images.
