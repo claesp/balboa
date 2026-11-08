@@ -129,9 +129,9 @@ def iso(args):
     boot_menu = ["--replace", "set timeout=60", "set timeout=5"] if metadata["lab"] else []
     try:
         if args.native:
-            run(["mkksiso", "--ks", ks, "--cmdline", cmdline] + boot_menu + [source, output])
+            run(["mkksiso", "--ks", ks, "--cmdline", cmdline] + boot_menu + [source, output], umask=0o077)
         else:
-            container(["mkksiso", "--skip-mkefiboot", "--ks", "/input/" + ks.name,
+            container(["bash", "-c", 'umask 077; exec "$@"', "bash", "mkksiso", "--skip-mkefiboot", "--ks", "/input/" + ks.name,
                        "--cmdline", cmdline] + boot_menu + ["/source/" + source.name, "/output/" + output.name],
                       [(source.parent, "/source", "ro"), (ks.parent, "/input", "ro"),
                        (output.parent, "/output", "rw")])
@@ -167,6 +167,8 @@ def parser():
     generate.add_argument("--output", type=Path, required=True)
     generate.add_argument("--disk", help="The only disk that the installer can erase.")
     generate.add_argument("--disk-size-gb", type=int, help="Fixed disk budget in decimal GB. Defaults: production 128, lab 32.")
+    generate.add_argument("--luks-passphrase-file", type=Path,
+                          help="Read a private UTF-8 file for unattended installation. Embeds the passphrase in Kickstart and ISO.")
     generate.add_argument("--lab-logging-dir", type=Path, help="Disposable client TLS directory from lab-logger.")
     generate.add_argument("--lab-logging-url", default="https://10.0.2.2:19532")
     auth = generate.add_mutually_exclusive_group(required=True)

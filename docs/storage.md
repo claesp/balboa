@@ -94,3 +94,25 @@ The default requested allocations use these sizes:
 The separate log and audit volumes limit interference with the root filesystem.
 They still require capacity alerts and site retention rules.
 The layout does not replace a workload capacity assessment.
+
+## Storage problems
+
+The installer status `Kickstart insufficient` means that the storage configuration is incomplete.
+That status appears when the installer has no configured root filesystem.
+It does not specifically identify a capacity problem.
+
+Without an installation passphrase, the default production image requires interactive LUKS entry.
+For an unattended installation, use [the passphrase-file procedure](build.md#unattended-disk-encryption).
+The account and GRUB digests do not supply the disk encryption secret.
+
+Make sure that the guest disk name matches the Kickstart target.
+Make sure that the guest disk capacity meets the image manifest budget.
+The QEMU launcher shows both values before the guest starts.
+
+If the status remains incomplete, examine `/tmp/storage.log` and `/tmp/anaconda.log` in an installer shell.
+Retain the fixed Kickstart partition scheme when you examine the installation destination.
+Automatic partitioning through the installer menu can replace that scheme.
+
+After a correction, render a new Kickstart and rebuild the ISO.
+Use a new QEMU work directory for the next installation attempt.
+The [Anaconda storage status code](https://github.com/rhinstaller/anaconda/blob/rhel-10/pyanaconda/ui/tui/spokes/storage.py) defines this status.

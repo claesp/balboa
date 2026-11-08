@@ -27,8 +27,10 @@ If the host account can access `/dev/kvm`, the script selects KVM.
 Otherwise, it selects CPU emulation with the QEMU `max` model.
 
 The script reads the JSON manifest beside a Balboa ISO.
+If you copy an ISO, copy its matching JSON manifest beside it.
 It uses the manifest disk size and device name.
 The script supports `vda`, `sda`, and `nvme0n1` as installation disk names.
+The startup summary shows the guest disk name, capacity, and firmware.
 
 Without a manifest, the script creates a 128 GB disk named `vda`.
 GB means 1,000,000,000 bytes.
@@ -45,6 +47,8 @@ It exposes no inbound host port or shared host directory.
 Use the QEMU window for the installer and GNOME desktop.
 Use the terminal for serial prompts from lab media.
 For production media, enter the disk encryption passphrase when the guest prompts.
+For unattended installation, supply `--luks-passphrase-file` during the [image build](build.md#unattended-disk-encryption).
+This supplies the installation key and still requires disk unlock at boot.
 
 ## Boot the installed disk
 

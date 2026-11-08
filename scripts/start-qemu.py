@@ -155,6 +155,7 @@ def main():
             raise ValueError(f"Install {tool} on the build host.")
     work, record = prepare(args)
     print(f"The VM disk is {work / 'system.qcow2'}.", flush=True)
+    print(f'Guest disk: {record["disk_device"]}, {record["disk_bytes"] / 1_000_000_000:g} GB, {record["firmware"].upper()} firmware.', flush=True)
     print("Use the QEMU window and this terminal for installation and disk unlock.", flush=True)
     return subprocess.run(command(args, work, record)).returncode
 

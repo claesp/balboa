@@ -120,13 +120,57 @@ The disk parameter also accepts `disk/by-id/` identifiers.
 Use a stable identifier when disk enumeration can change.
 The installer can access only the selected disk through Kickstart storage commands.
 
-At installation, enter a unique LUKS2 passphrase through the local console.
-The production Kickstart contains no disk passphrase.
+Without `--luks-passphrase-file`, enter a unique LUKS2 passphrase through the local console during installation.
+The default production Kickstart contains no disk passphrase.
 The installer stops after installation through the `poweroff` command.
 
 Start the installed system to apply the security profile.
 After the automatic restart, unlock the disk again.
 Use [the security procedure](security.md) before production release.
+
+## Unattended disk encryption
+
+A LUKS passphrase is an encryption secret for the disk.
+Account and GRUB password digests do not supply this secret.
+Use `--luks-passphrase-file` to supply the installation passphrase from a private file.
+
+The file must use UTF-8 and contain 15 to 128 printable characters.
+Put only the plaintext passphrase in the file, without JSON formatting.
+The file can end with one newline.
+The renderer rejects symbolic links, embedded line breaks, and group or other access permissions.
+
+Generate a new passphrase file in private storage on the build host.
+The following Bash commands refuse to overwrite an existing file:
+
+```sh
+install -d -m 0700 "$HOME/.config/balboa"
+(
+  umask 077
+  set -o noclobber
+  openssl rand -base64 48 > "$HOME/.config/balboa/luks-passphrase"
+)
+```
+
+Use a unique passphrase for each production installation.
+Retain the passphrase in the approved recovery vault.
+Use mode `0600` for an existing passphrase file.
+
+Prepare the site file through the preceding procedure before these commands.
+Fetch the DVD source on the build host before the image build:
+
+```sh
+python3 -m balboa fetch --kind dvd
+python3 -m balboa render --flavor laptop --kind dvd --site site.json --disk nvme0n1 --luks-passphrase-file "$HOME/.config/balboa/luks-passphrase" --output build/laptop-unattended
+python3 -m balboa iso build/laptop-unattended/installation.ks --kind dvd --output build/balboa-laptop-unattended.iso
+```
+
+Supplying this file puts its plaintext passphrase in the generated Kickstart and ISO.
+Restrict both artifacts to the approved build and deployment accounts.
+The ISO builder uses a private creation mask and sets the image mode to `0600`.
+
+The manifest records `luks_passphrase_embedded` and `luks_passphrase_source` without the secret value.
+The file supplies the installation key only.
+The installed system still requires disk unlock at each boot.
 
 ## DVD media
 
@@ -173,9 +217,10 @@ The manifest records the source digest, Kickstart digest, flavor, and security p
 It also records the local tool image identity and source lock digest.
 The installed system records its package list and datastream digest separately.
 
-Generated Kickstart files contain the password digest and public key.
+Generated Kickstart files contain account password digests and the public key.
 Treat these files and images as restricted artifacts.
-Lab artifacts also contain disposable disk passphrases.
+Lab artifacts contain disposable disk passphrases.
+Production artifacts also contain a disk passphrase when the renderer receives `--luks-passphrase-file`.
 The ISO builder sets the image file mode to `0600`.
 
 The build is auditable but not byte reproducible.

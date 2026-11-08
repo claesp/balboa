@@ -182,7 +182,10 @@ sudo systemctl restart balboa-audit.service
 
 Use a unique passphrase for each production installation.
 Keep recovery material in the approved site vault.
-Do not put production passphrases in Kickstart files or kernel arguments.
+The default production procedure requests the passphrase at installation.
+For unattended installation, the explicit `--luks-passphrase-file` flag embeds the passphrase in Kickstart and ISO files.
+Restrict access to these artifacts because they contain the plaintext installation key.
+Do not put passphrases in kernel arguments.
 
 ## References
 

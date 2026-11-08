@@ -3,9 +3,12 @@
 import base64
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
 import secrets
+import shlex
+import stat
 import subprocess
 from urllib.parse import urlsplit
 
@@ -13,6 +16,32 @@ from .storage import kickstart_volumes, layout
 from .policy import EXCLUSIONS, tailoring
 
 ROOT = Path(__file__).resolve().parent.parent
+
+
+def validate_luks_passphrase(value):
+    if not isinstance(value, str) or not 15 <= len(value) <= 128 or not value.isprintable():
+        raise ValueError("The LUKS passphrase requires 15 to 128 printable characters without line breaks.")
+
+
+def read_luks_passphrase(path):
+    descriptor = os.open(path, os.O_RDONLY | os.O_NONBLOCK | os.O_NOFOLLOW)
+    with os.fdopen(descriptor, "rb") as source:
+        metadata = os.fstat(source.fileno())
+        if not stat.S_ISREG(metadata.st_mode) or metadata.st_mode & 0o077:
+            raise ValueError("The LUKS passphrase file must be regular and deny all group and other access. Use mode 0600.")
+        data = source.read(1025)
+    if len(data) > 1024:
+        raise ValueError("The LUKS passphrase file exceeds the permitted size.")
+    if data.endswith(b"\r\n"):
+        data = data[:-2]
+    elif data.endswith(b"\n"):
+        data = data[:-1]
+    try:
+        value = data.decode("utf-8")
+    except UnicodeDecodeError:
+        raise ValueError("The LUKS passphrase file must use UTF-8.") from None
+    validate_luks_passphrase(value)
+    return value
 
 
 def validate_keyboard(layout):
@@ -92,6 +121,8 @@ def render_text(flavor, site, disk, kind, lab=False, passphrase=None, disk_gb=No
         raise ValueError("A lab installation can erase only vda.")
     if lab and not re.fullmatch(r"[A-Za-z0-9_-]{32,}", passphrase or ""):
         raise ValueError("A lab installation requires a generated encryption secret.")
+    if passphrase is not None:
+        validate_luks_passphrase(passphrase)
     definition = json.loads((ROOT / "flavors" / f"{flavor}.json").read_text())
     storage = layout(disk_gb, lab)
     files = ""
@@ -147,27 +178,31 @@ def render_text(flavor, site, disk, kind, lab=False, passphrase=None, disk_gb=No
     values.update({"MODE": "cmdline" if lab else "text", "SOURCE": source, "DISK": disk,
                    "ROOTPW": "rootpw --iscrypted " + site["root_password_hash"],
                    "CONSOLE": "console=tty0 console=ttyS0,115200n8" if lab else "",
-                   "PASSPHRASE": f' --passphrase="{passphrase}"' if lab else "",
+                   "PASSPHRASE": (f' --passphrase="{passphrase}"' if lab else
+                                  " --passphrase=" + shlex.quote(passphrase) if passphrase is not None else ""),
                    "DISPLAY": "xconfig --startxonboot" if definition["desktop"] else "skipx",
                    "PV_MIB": str(storage["pv_mib"]), "BOOT_MIB": str(storage["boot_mib"]),
                    "VOLUMES": kickstart_volumes(storage),
                    "PACKAGES": "\n".join(definition["packages"] + ["-" + p for p in definition["exclude"]]), "FILES": files})
-    text = (ROOT / "kickstarts/base.ks.in").read_text()
-    text = re.sub(r"@@([A-Z_]+)@@", lambda match: values[match[1]], text)
-    if "@@" in text:
+    template = (ROOT / "kickstarts/base.ks.in").read_text()
+    field = r"@@([A-Z_]+)@@"
+    if set(re.findall(field, template)) - set(values) or "@@" in re.sub(field, "", template):
         raise ValueError("The Kickstart contains an unresolved field.")
+    text = re.sub(field, lambda match: values[match[1]], template)
     return text, definition
 
 
 def render(args):
     if args.lab_logging_dir and not args.lab:
         raise ValueError("Disposable logging credentials require --lab.")
+    if args.lab and args.luks_passphrase_file:
+        raise ValueError("Lab mode generates its own LUKS passphrase. Use --luks-passphrase-file with --site.")
+    passphrase = read_luks_passphrase(args.luks_passphrase_file) if args.luks_passphrase_file else None
     output = args.output.resolve()
     output.mkdir(parents=True, exist_ok=True)
     if list(output.iterdir()):
         raise ValueError("The output directory must be empty.")
     output.chmod(0o700)
-    passphrase = None
     lab_tls = None
     if args.lab:
         password = secrets.token_urlsafe(32)
@@ -205,6 +240,8 @@ def render(args):
     path.write_text(text)
     metadata = {"flavor": args.flavor, "profile": tailoring(args.flavor, definition["profile"])[0],
                 "base_profile": definition["profile"], "lab": args.lab,
+                "luks_passphrase_embedded": passphrase is not None,
+                "luks_passphrase_source": "generated-lab" if args.lab else "file" if passphrase is not None else "interactive",
                 "root_console_password_configured": bool(site.get("root_password_hash")),
                 "journal_upload_configured": bool(site.get("journal_upload")),
                 "policy_deviations": EXCLUSIONS,

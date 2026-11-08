@@ -163,13 +163,17 @@ Do physical laptop tests before release.
 
 ## Production media tests
 
-Production media requires interactive entry of the encryption passphrase.
+Default production media requests the encryption passphrase during installation.
+Media built with `--luks-passphrase-file` supplies that installation key automatically.
 Use an isolated virtual machine with a disposable disk for this test.
 Select the same disk name in Kickstart as the virtual machine exposes.
 
 Attach the production ISO through virt-manager or an equivalent QEMU interface.
 Do not attach host block devices or shared host directories.
 Use the graphical console to enter the passphrase and examine installer errors.
+The status `Kickstart insufficient` means that storage configuration is incomplete.
+It does not specifically report insufficient disk capacity.
+See [Storage problems](storage.md#storage-problems) for the installation diagnostics.
 
 After installation, do the two system boots with manual disk unlock.
 Examine the reports through the installed system console.

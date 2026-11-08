@@ -45,6 +45,16 @@ The supported layout names appear in [the keyboard catalog](../data/keyboards.js
 The catalog records layouts from the official Rocky Linux `xkeyboard-config` package.
 The renderer and ISO preflight tests reject names outside that catalog.
 
+## Disk encryption
+
+The account and bootloader digest fields do not configure the LUKS passphrase.
+Without an explicit installation key, the installer prompts for this passphrase.
+For unattended installation, use the renderer flag `--luks-passphrase-file` with a private file.
+
+The passphrase file is separate from the site JSON file.
+The renderer embeds its plaintext contents in the generated installation artifacts.
+Use [Unattended disk encryption](build.md#unattended-disk-encryption) for the file format and build procedure.
+
 ## Central journal receiver
 
 A journal receiver accepts structured system log events.

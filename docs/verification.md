@@ -6,7 +6,7 @@ The source media is the authenticated Rocky Linux 10.2 boot ISO.
 
 ## Completed tests
 
-The local suite contains 33 passing tests.
+The local suite contains 37 passing tests.
 It includes site input restrictions, report assessment, guest archive restrictions, and expected OpenSCAP exit handling.
 The suite also tests the serial unlock procedure and installer error detection.
 The local suite accepts matching root console and administrator password digests for all three flavors.
@@ -14,6 +14,7 @@ Six launcher tests cover disk preservation, manifest constraints, boot reuse, an
 Keyboard tests reject `sv` and `se-latin1` where XKB layout identifiers are required.
 The Swedish layout `se` renders correctly for all three flavors.
 The Rocky container preflight accepts `se` and rejects `sv` before ISO creation.
+Encryption tests cover private passphrase files, quoted characters, line endings, and rejected control characters.
 
 All three flavors pass the RHEL10 Kickstart parser.
 All guest shell programs pass Bash syntax tests.
