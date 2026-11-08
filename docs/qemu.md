@@ -47,7 +47,7 @@ It exposes no inbound host port or shared host directory.
 Use the QEMU window for the installer and GNOME desktop.
 Use the terminal for serial prompts from lab media.
 For production media, enter the disk encryption passphrase when the guest prompts.
-For unattended installation, supply `--luks-passphrase-file` during the [image build](build.md#unattended-disk-encryption).
+For unattended installation, set `luks_passphrase` in the site JSON before the [image build](build.md#unattended-disk-encryption).
 This supplies the installation key and still requires disk unlock at boot.
 
 ## Boot the installed disk

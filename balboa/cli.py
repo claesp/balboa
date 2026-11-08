@@ -167,12 +167,10 @@ def parser():
     generate.add_argument("--output", type=Path, required=True)
     generate.add_argument("--disk", help="The only disk that the installer can erase.")
     generate.add_argument("--disk-size-gb", type=int, help="Fixed disk budget in decimal GB. Defaults: production 128, lab 32.")
-    generate.add_argument("--luks-passphrase-file", type=Path,
-                          help="Read a private UTF-8 file for unattended installation. Embeds the passphrase in Kickstart and ISO.")
     generate.add_argument("--lab-logging-dir", type=Path, help="Disposable client TLS directory from lab-logger.")
     generate.add_argument("--lab-logging-url", default="https://10.0.2.2:19532")
     auth = generate.add_mutually_exclusive_group(required=True)
-    auth.add_argument("--site", type=Path)
+    auth.add_argument("--site", type=Path, help="Site JSON. Set luks_passphrase for unattended disk encryption.")
     auth.add_argument("--lab", action="store_true", help="Generate disposable VM credentials for vda.")
     generate.set_defaults(func=render)
     syntax = commands.add_parser("validate", help="Do syntax and security-content tests in Podman.")

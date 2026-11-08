@@ -21,27 +21,22 @@ ROOT = Path(__file__).resolve().parent.parent
 def validate_luks_passphrase(value):
     if not isinstance(value, str) or not 15 <= len(value) <= 128 or not value.isprintable():
         raise ValueError("The LUKS passphrase requires 15 to 128 printable characters without line breaks.")
+    if value == "REPLACE_WITH_A_PLAINTEXT_LUKS_PASSPHRASE":
+        raise ValueError("Replace the example LUKS passphrase with the actual passphrase, or omit the field for interactive installation.")
 
 
-def read_luks_passphrase(path):
+def read_site(path):
     descriptor = os.open(path, os.O_RDONLY | os.O_NONBLOCK | os.O_NOFOLLOW)
-    with os.fdopen(descriptor, "rb") as source:
+    with os.fdopen(descriptor, "r", encoding="utf-8") as source:
         metadata = os.fstat(source.fileno())
-        if not stat.S_ISREG(metadata.st_mode) or metadata.st_mode & 0o077:
-            raise ValueError("The LUKS passphrase file must be regular and deny all group and other access. Use mode 0600.")
-        data = source.read(1025)
-    if len(data) > 1024:
-        raise ValueError("The LUKS passphrase file exceeds the permitted size.")
-    if data.endswith(b"\r\n"):
-        data = data[:-2]
-    elif data.endswith(b"\n"):
-        data = data[:-1]
-    try:
-        value = data.decode("utf-8")
-    except UnicodeDecodeError:
-        raise ValueError("The LUKS passphrase file must use UTF-8.") from None
-    validate_luks_passphrase(value)
-    return value
+        if not stat.S_ISREG(metadata.st_mode):
+            raise ValueError("The site file must be a regular file.")
+        site = json.load(source)
+    if not isinstance(site, dict):
+        raise ValueError("The site file must contain a JSON object.")
+    if site.get("luks_passphrase") is not None and metadata.st_mode & 0o077:
+        raise ValueError("A site file with a LUKS passphrase must deny all group and other access. Use mode 0600.")
+    return valid_site(site)
 
 
 def validate_keyboard(layout):
@@ -62,7 +57,7 @@ def valid_site(site):
         "language": r"[a-z]{2}_[A-Z]{2}\.UTF-8",
     }
     required = set(patterns) | {"root_password_hash"}
-    if not required <= set(site) or set(site) - required - {"journal_upload"}:
+    if not required <= set(site) or set(site) - required - {"journal_upload", "luks_passphrase"}:
         raise ValueError("The site file contains missing or unknown fields.")
     for key, pattern in patterns.items():
         if not isinstance(site[key], str) or not re.fullmatch(pattern, site[key]):
@@ -71,6 +66,8 @@ def valid_site(site):
     root_hash = site["root_password_hash"]
     if not isinstance(root_hash, str) or not re.fullmatch(patterns["password_hash"], root_hash):
         raise ValueError("The root console password requires a SHA512 crypt digest.")
+    if site.get("luks_passphrase") is not None:
+        validate_luks_passphrase(site["luks_passphrase"])
     upload = site.get("journal_upload")
     if upload is not None:
         allowed = {"url", "trusted_certificate_file", "client_certificate_file", "client_key_file"}
@@ -115,6 +112,10 @@ def file_fragment(path, content, executable=False, mode=None):
 
 def render_text(flavor, site, disk, kind, lab=False, passphrase=None, disk_gb=None, lab_tls=None):
     valid_site(site)
+    if not lab:
+        if passphrase is not None:
+            raise ValueError("Supply the production LUKS passphrase in the site luks_passphrase field.")
+        passphrase = site.get("luks_passphrase")
     if not re.fullmatch(r"(?:sd[a-z]+|vd[a-z]+|nvme[0-9]+n[0-9]+|disk/by-id/[A-Za-z0-9_.:+-]+)", disk or ""):
         raise ValueError("Set an explicit whole disk name or disk/by-id identifier.")
     if lab and disk != "vda":
@@ -195,9 +196,8 @@ def render_text(flavor, site, disk, kind, lab=False, passphrase=None, disk_gb=No
 def render(args):
     if args.lab_logging_dir and not args.lab:
         raise ValueError("Disposable logging credentials require --lab.")
-    if args.lab and args.luks_passphrase_file:
-        raise ValueError("Lab mode generates its own LUKS passphrase. Use --luks-passphrase-file with --site.")
-    passphrase = read_luks_passphrase(args.luks_passphrase_file) if args.luks_passphrase_file else None
+    site = None if args.lab else read_site(args.site)
+    passphrase = None
     output = args.output.resolve()
     output.mkdir(parents=True, exist_ok=True)
     if list(output.iterdir()):
@@ -233,15 +233,16 @@ def render(args):
                                       "client_certificate_file": "/etc/pki/balboa/client.pem",
                                       "client_key_file": "/etc/pki/balboa/client.key"}
     else:
-        site = json.loads(args.site.read_text())
         disk = args.disk
     text, definition = render_text(args.flavor, site, disk, args.kind, args.lab, passphrase, args.disk_size_gb, lab_tls)
+    if not args.lab:
+        passphrase = site.get("luks_passphrase")
     path = output / "installation.ks"
     path.write_text(text)
     metadata = {"flavor": args.flavor, "profile": tailoring(args.flavor, definition["profile"])[0],
                 "base_profile": definition["profile"], "lab": args.lab,
                 "luks_passphrase_embedded": passphrase is not None,
-                "luks_passphrase_source": "generated-lab" if args.lab else "file" if passphrase is not None else "interactive",
+                "luks_passphrase_source": "generated-lab" if args.lab else "site" if passphrase is not None else "interactive",
                 "root_console_password_configured": bool(site.get("root_password_hash")),
                 "journal_upload_configured": bool(site.get("journal_upload")),
                 "policy_deviations": EXCLUSIONS,

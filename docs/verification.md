@@ -6,7 +6,7 @@ The source media is the authenticated Rocky Linux 10.2 boot ISO.
 
 ## Completed tests
 
-The local suite contains 37 passing tests.
+The local suite contains 38 passing tests.
 It includes site input restrictions, report assessment, guest archive restrictions, and expected OpenSCAP exit handling.
 The suite also tests the serial unlock procedure and installer error detection.
 The local suite accepts matching root console and administrator password digests for all three flavors.
@@ -14,7 +14,8 @@ Six launcher tests cover disk preservation, manifest constraints, boot reuse, an
 Keyboard tests reject `sv` and `se-latin1` where XKB layout identifiers are required.
 The Swedish layout `se` renders correctly for all three flavors.
 The Rocky container preflight accepts `se` and rejects `sv` before ISO creation.
-Encryption tests cover private passphrase files, quoted characters, line endings, and rejected control characters.
+Encryption tests cover site JSON passphrases, quoted characters, file permissions, and rejected control characters.
+The tests require the passphrase to remain absent from manifests and console output.
 
 All three flavors pass the RHEL10 Kickstart parser.
 All guest shell programs pass Bash syntax tests.
@@ -82,7 +83,8 @@ See [Interactive QEMU tests](qemu.md) for the installation and later boot comman
 ## Unattended 128 GB installation
 
 The laptop DVD completes installation on a 128 GB NVMe disk with UEFI.
-The image uses the production renderer with disposable credentials and `--luks-passphrase-file`.
+The recorded test uses revision `51f764f` with disposable credentials and its former passphrase-file input.
+The current `luks_passphrase` site field exactly reproduces that tested Kickstart.
 The keyboard layout is Swedish `se`.
 
 The guest disk is `nvme0n1` and contains exactly 128000000000 bytes.

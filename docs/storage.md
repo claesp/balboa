@@ -102,7 +102,7 @@ That status appears when the installer has no configured root filesystem.
 It does not specifically identify a capacity problem.
 
 Without an installation passphrase, the default production image requires interactive LUKS entry.
-For an unattended installation, use [the passphrase-file procedure](build.md#unattended-disk-encryption).
+For an unattended installation, use [the site passphrase procedure](build.md#unattended-disk-encryption).
 The account and GRUB digests do not supply the disk encryption secret.
 
 Make sure that the guest disk name matches the Kickstart target.

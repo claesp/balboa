@@ -120,7 +120,7 @@ The disk parameter also accepts `disk/by-id/` identifiers.
 Use a stable identifier when disk enumeration can change.
 The installer can access only the selected disk through Kickstart storage commands.
 
-Without `--luks-passphrase-file`, enter a unique LUKS2 passphrase through the local console during installation.
+Without a `luks_passphrase` site value, enter a unique LUKS2 passphrase through the local console during installation.
 The default production Kickstart contains no disk passphrase.
 The installer stops after installation through the `poweroff` command.
 
@@ -132,44 +132,48 @@ Use [the security procedure](security.md) before production release.
 
 A LUKS passphrase is an encryption secret for the disk.
 Account and GRUB password digests do not supply this secret.
-Use `--luks-passphrase-file` to supply the installation passphrase from a private file.
+Set `luks_passphrase` in `site.json` to supply the installation key.
 
-The file must use UTF-8 and contain 15 to 128 printable characters.
-Put only the plaintext passphrase in the file, without JSON formatting.
-The file can end with one newline.
-The renderer rejects symbolic links, embedded line breaks, and group or other access permissions.
+The value must contain the actual plaintext passphrase, with 15 to 128 printable characters.
+The renderer rejects embedded line breaks and control characters.
+Omit the field or use `null` to request interactive entry during installation.
 
-Generate a new passphrase file in private storage on the build host.
-The following Bash commands refuse to overwrite an existing file:
+Generate a new passphrase on the build host:
 
 ```sh
-install -d -m 0700 "$HOME/.config/balboa"
-(
-  umask 077
-  set -o noclobber
-  openssl rand -base64 48 > "$HOME/.config/balboa/luks-passphrase"
-)
+openssl rand -base64 48
 ```
 
+Put the result in the `luks_passphrase` field.
+Replace the example placeholder with the actual value:
+
+```json
+"luks_passphrase": "REPLACE_WITH_A_PLAINTEXT_LUKS_PASSPHRASE"
+```
+
+The renderer rejects this placeholder until you replace it.
+Use JSON escaping for quotes or backslashes within the passphrase.
 Use a unique passphrase for each production installation.
 Retain the passphrase in the approved recovery vault.
-Use mode `0600` for an existing passphrase file.
+Protect the site file with mode `0600`.
+The renderer rejects group or other access to a site file that contains a LUKS passphrase.
 
 Prepare the site file through the preceding procedure before these commands.
 Fetch the DVD source on the build host before the image build:
 
 ```sh
 python3 -m balboa fetch --kind dvd
-python3 -m balboa render --flavor laptop --kind dvd --site site.json --disk nvme0n1 --luks-passphrase-file "$HOME/.config/balboa/luks-passphrase" --output build/laptop-unattended
+chmod 600 site.json
+python3 -m balboa render --flavor laptop --kind dvd --site site.json --disk nvme0n1 --output build/laptop-unattended
 python3 -m balboa iso build/laptop-unattended/installation.ks --kind dvd --output build/balboa-laptop-unattended.iso
 ```
 
-Supplying this file puts its plaintext passphrase in the generated Kickstart and ISO.
-Restrict both artifacts to the approved build and deployment accounts.
+The site JSON file, generated Kickstart, and ISO contain the plaintext passphrase.
+Restrict these artifacts to the approved build and deployment accounts.
 The ISO builder uses a private creation mask and sets the image mode to `0600`.
 
 The manifest records `luks_passphrase_embedded` and `luks_passphrase_source` without the secret value.
-The file supplies the installation key only.
+The site value supplies the installation key only.
 The installed system still requires disk unlock at each boot.
 
 ## DVD media
@@ -220,7 +224,7 @@ The installed system records its package list and datastream digest separately.
 Generated Kickstart files contain account password digests and the public key.
 Treat these files and images as restricted artifacts.
 Lab artifacts contain disposable disk passphrases.
-Production artifacts also contain a disk passphrase when the renderer receives `--luks-passphrase-file`.
+Production artifacts also contain a disk passphrase when the site file supplies `luks_passphrase`.
 The ISO builder sets the image file mode to `0600`.
 
 The build is auditable but not byte reproducible.

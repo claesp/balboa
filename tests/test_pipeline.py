@@ -9,7 +9,7 @@ import unittest
 import xml.etree.ElementTree as ET
 
 from balboa.cli import checksum_entry
-from balboa.render import render_text, valid_site, read_luks_passphrase
+from balboa.render import render_text, valid_site, read_site, render
 from balboa.vm import decode_evidence, extract_evidence, inspect_system, observe
 from balboa.storage import layout
 from balboa.policy import EXCLUSIONS, tailoring
@@ -151,49 +151,68 @@ class PipelineTests(unittest.TestCase):
         self.assertIn("--encrypted --luks-version=luks2\n", text)
         self.assertNotIn("--passphrase", text)
         self.assertNotIn("@@", text)
+        text, _ = render_text("server", {**self.site, "luks_passphrase": None}, "vda", "boot")
+        self.assertNotIn("--passphrase", text)
 
     def test_production_embeds_only_an_explicit_luks_passphrase(self):
         import shlex
         secret = "A test with '$` ! @@TOKEN@@ punctuation"
-        text, _ = render_text("laptop", self.site, "nvme0n1", "dvd", passphrase=secret)
-        line = next(line for line in text.splitlines() if line.startswith("part pv.01"))
-        self.assertIn("--passphrase=" + secret, shlex.split(line))
-        self.assertIn("--ondisk=nvme0n1", line)
+        for flavor in ("server", "workstation", "laptop"):
+            with self.subTest(flavor=flavor):
+                text, _ = render_text(flavor, {**self.site, "luks_passphrase": secret}, "nvme0n1", "dvd")
+                line = next(line for line in text.splitlines() if line.startswith("part pv.01"))
+                self.assertIn("--passphrase=" + secret, shlex.split(line))
+                self.assertIn("--ondisk=nvme0n1", line)
 
-    def test_luks_passphrase_file_preserves_spaces_and_accepts_one_line_ending(self):
-        secret = " a printable test passphrase "
-        for ending in (b"", b"\n", b"\r\n"):
-            path = self.root / "luks-key"
-            path.write_bytes(secret.encode() + ending)
-            path.chmod(0o600)
-            with self.subTest(ending=ending):
-                self.assertEqual(read_luks_passphrase(path), secret)
+    def test_site_json_preserves_passphrase_spaces_and_all_other_fields(self):
+        site = {**self.site, "luks_passphrase": " a printable test passphrase "}
+        path = self.root / "site.json"
+        path.write_text(json.dumps(site))
+        path.chmod(0o600)
+        self.assertEqual(read_site(path), site)
 
-    def test_luks_passphrase_file_rejects_public_access_and_symlinks(self):
+    def test_site_with_luks_key_rejects_public_access_and_nonregular_files(self):
         import os
-        path = self.root / "luks-key"
-        path.write_text("a sufficiently long test passphrase")
+        path = self.root / "site.json"
+        path.write_text(json.dumps({**self.site, "luks_passphrase": "a sufficiently long test passphrase"}))
         path.chmod(0o644)
         with self.assertRaises(ValueError):
-            read_luks_passphrase(path)
+            read_site(path)
         path.chmod(0o600)
         link = self.root / "link"
         link.symlink_to(path)
         with self.assertRaises(OSError):
-            read_luks_passphrase(link)
+            read_site(link)
         fifo = self.root / "fifo"
         os.mkfifo(fifo, 0o600)
         with self.assertRaises(ValueError):
-            read_luks_passphrase(fifo)
+            read_site(fifo)
 
     def test_luks_passphrase_rejects_controls_without_exposing_its_contents(self):
-        for secret in ("short", "long secret value\n%post\n", "a secret with a null\0", "a" * 129):
-            path = self.root / "luks-key"
-            path.write_text(secret)
-            path.chmod(0o600)
+        for secret in ("short", "long secret value\n%post\n", "a secret with a null\0", "a" * 129,
+                       "REPLACE_WITH_A_PLAINTEXT_LUKS_PASSPHRASE"):
             with self.subTest(length=len(secret)), self.assertRaises(ValueError) as error:
-                read_luks_passphrase(path)
+                valid_site({**self.site, "luks_passphrase": secret})
             self.assertNotIn(secret, str(error.exception))
+
+    def test_render_reads_site_key_and_does_not_disclose_it_in_metadata(self):
+        import contextlib
+        from balboa.cli import parser
+        secret = "a private integration test passphrase"
+        site = self.root / "site.json"
+        site.write_text(json.dumps({**self.site, "luks_passphrase": secret}))
+        site.chmod(0o600)
+        output = self.root / "rendered"
+        args = parser().parse_args(["render", "--flavor", "laptop", "--site", str(site),
+                                   "--disk", "nvme0n1", "--output", str(output)])
+        stdout = io.StringIO()
+        with contextlib.redirect_stdout(stdout):
+            render(args)
+        record = (output / "installation.json").read_text()
+        self.assertEqual(json.loads(record)["luks_passphrase_source"], "site")
+        self.assertTrue(json.loads(record)["luks_passphrase_embedded"])
+        self.assertNotIn(secret, record)
+        self.assertNotIn(secret, stdout.getvalue())
 
     def test_lab_requires_isolated_disk_and_generated_secret(self):
         for disk, secret in (("sda", "a" * 40), ("vda", None), ("vda", 'x"\n%post')):

@@ -164,7 +164,7 @@ Do physical laptop tests before release.
 ## Production media tests
 
 Default production media requests the encryption passphrase during installation.
-Media built with `--luks-passphrase-file` supplies that installation key automatically.
+Media built with a `luks_passphrase` site value supplies that installation key automatically.
 Use an isolated virtual machine with a disposable disk for this test.
 Select the same disk name in Kickstart as the virtual machine exposes.
 
