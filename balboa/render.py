@@ -97,6 +97,8 @@ def render_text(flavor, site, disk, kind, lab=False, passphrase=None, disk_gb=No
     native = {"key_fingerprint": json.loads((ROOT / "sources.lock.json").read_text())["key_fingerprint"],
               "key_fingerprints": json.loads((ROOT / "sources.lock.json").read_text())["rpm_key_fingerprints"],
               "excluded_packages": definition["exclude"]}
+    if site.get("journal_upload", {}).get("client_key_file"):
+        native["journal_client_key"] = site["journal_upload"]["client_key_file"]
     files += file_fragment("/etc/balboa/native-policy.json", json.dumps(native))
     if lab_tls:
         if not lab:
@@ -117,9 +119,12 @@ def render_text(flavor, site, disk, kind, lab=False, passphrase=None, disk_gb=No
         if "trusted_certificate_file" not in upload:
             lines.append("TrustedCertificateFile=/etc/pki/tls/certs/ca-bundle.crt")
         if "client_key_file" in upload:
-            lines.append("ServerKeyFile=/run/credentials/systemd-journal-upload.service/log-client.key")
+            lines.append("ServerKeyFile=" + upload["client_key_file"])
+            files += "getent group balboa-logs >/dev/null || groupadd --system balboa-logs\n"
             files += file_fragment("/etc/systemd/system/systemd-journal-upload.service.d/60-balboa-credentials.conf",
-                                   "[Service]\nLoadCredential=log-client.key:" + upload["client_key_file"] + "\n", mode="0644")
+                                   "[Service]\nSupplementaryGroups=balboa-logs\n", mode="0644")
+            if lab_tls:
+                files += "chgrp balboa-logs " + upload["client_key_file"] + "\nchmod 0640 " + upload["client_key_file"] + "\n"
         else:
             lines += ["ServerKeyFile=-", "ServerCertificateFile=-"]
         files += file_fragment("/etc/systemd/journal-upload.conf.d/60-balboa.conf", "\n".join(lines) + "\n", mode="0644")

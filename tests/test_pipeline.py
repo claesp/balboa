@@ -14,7 +14,7 @@ from balboa.vm import decode_evidence, extract_evidence, inspect_system, observe
 from balboa.storage import layout
 from balboa.policy import EXCLUSIONS, tailoring
 from guest.result_gate import assess, NS
-from guest.native_checks import validate_fingerprints
+from guest.native_checks import validate_fingerprints, validate_key_access
 
 PROFILE = "xccdf_org.ssgproject.content_profile_cis"
 
@@ -71,6 +71,13 @@ class PipelineTests(unittest.TestCase):
             valid_site({**self.site, "username": "root"})
         with self.assertRaises(ValueError):
             valid_site({**self.site, "username": "operator"})
+
+    def test_journal_private_key_rejects_insecure_access(self):
+        from types import SimpleNamespace
+        validate_key_access(SimpleNamespace(st_uid=0, st_gid=321, st_mode=0o100640), 321)
+        for uid, gid, mode in ((1000,321,0o640),(0,999,0o640),(0,321,0o644),(0,321,0o660)):
+            with self.subTest(uid=uid,gid=gid,mode=mode), self.assertRaises(ValueError):
+                validate_key_access(SimpleNamespace(st_uid=uid, st_gid=gid, st_mode=mode), 321)
 
     def test_optional_root_and_logging_configuration(self):
         site = {**self.site, "root_password_hash": self.site["password_hash"],

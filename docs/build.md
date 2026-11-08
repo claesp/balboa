@@ -152,6 +152,7 @@ The installed system records its package list and datastream digest separately.
 Generated Kickstart files contain the password digest and public key.
 Treat these files and images as restricted artifacts.
 Lab artifacts also contain disposable disk passphrases.
+The ISO builder sets the image file mode to `0600`.
 
 The build is auditable but not byte reproducible.
 Online package repositories change over time.

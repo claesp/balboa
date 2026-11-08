@@ -7,6 +7,8 @@ import subprocess
 import sys
 import re
 import argparse
+import grp
+import stat
 
 
 def fingerprints(data):
@@ -21,6 +23,11 @@ def validate_fingerprints(observed, policy):
         raise ValueError("The required Rocky signing key is absent.")
     if observed - set(policy["key_fingerprints"]):
         raise ValueError("The system contains a signing key outside the source lock.")
+
+
+def validate_key_access(metadata, expected_gid):
+    if metadata.st_uid != 0 or metadata.st_gid != expected_gid or stat.S_IMODE(metadata.st_mode) != 0o640:
+        raise ValueError("The journal private key requires root ownership, group balboa-logs, and mode 0640.")
 
 
 def main():
@@ -42,14 +49,17 @@ def main():
     forbidden = names.intersection(policy["excluded_packages"])
     if forbidden:
         raise ValueError("The system contains excluded packages: " + ", ".join(sorted(forbidden)))
+    if policy.get("journal_client_key"):
+        validate_key_access(Path(policy["journal_client_key"]).stat(), grp.getgrnam("balboa-logs").gr_gid)
     print(json.dumps({"passed": True, "rocky_key_fingerprint": policy["key_fingerprint"],
                       "observed_file_fingerprints": sorted(file_keys), "observed_rpm_fingerprints": sorted(rpm_keys),
-                      "excluded_packages_absent": True}, indent=2))
+                      "excluded_packages_absent": True,
+                      "journal_private_key_permissions": "passed" if policy.get("journal_client_key") else "not configured"}, indent=2))
 
 
 if __name__ == "__main__":
     try:
         main()
-    except (ValueError, OSError, subprocess.CalledProcessError) as error:
+    except (ValueError, KeyError, OSError, subprocess.CalledProcessError) as error:
         print(json.dumps({"passed": False, "error": str(error)}))
         sys.exit(1)

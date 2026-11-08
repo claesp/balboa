@@ -78,6 +78,19 @@ LVM rounds requested sizes to its allocation units.
 The reserved overhead permits this rounding without enlarging the physical volume.
 The manifest records requested sizes in MiB.
 
+The default requested allocations use these sizes:
+
+| Logical volume | Production 128 GB, MiB | Lab 32 GB, MiB |
+| --- | --- | --- |
+| Root | 36999 | 11365 |
+| Home | 29827 | 4192 |
+| Temporary | 4626 | 964 |
+| Variable data | 19531 | 4882 |
+| Persistent temporary | 4626 | 964 |
+| Logs | 11311 | 2155 |
+| Audit logs | 6684 | 1191 |
+| Swap | 5138 | 1476 |
+
 The separate log and audit volumes limit interference with the root filesystem.
 They still require capacity alerts and site retention rules.
 The layout does not replace a workload capacity assessment.

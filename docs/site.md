@@ -46,16 +46,36 @@ The renderer rejects HTTP, URL credentials, and certificate paths outside `/etc/
 
 The certificate fields contain paths, not certificate contents.
 Provision the certificates and private key through the approved site procedure before the first boot.
-Use mode `0644` for public certificates and mode `0600` for the root-owned private key.
+Use mode `0644` for public certificates.
+Give the private key root ownership, group `balboa-logs`, and mode `0640`.
 Use mode `0755` for directories that contain public certificates.
 
-The service uses `LoadCredential` to read the private key with its restricted service identity.
+The installer creates the `balboa-logs` group.
+Only the journal upload service receives this group through its service definition.
+Do not add interactive users to this group.
+The native assessment requires the specified key ownership and access mode.
+
+The service reads the key with its restricted identity and the normal certificate SELinux label.
+Rocky policy blocks this service from reading the default systemd credential label.
+The project keeps SELinux enforcing and uses the restricted group instead.
+
+For the example paths, apply the key access and SELinux labels at the installed system console.
+
+```sh
+sudo chown root:balboa-logs /etc/pki/balboa/client.key
+sudo chmod 0640 /etc/pki/balboa/client.key
+sudo chmod 0755 /etc/pki/balboa
+sudo chmod 0644 /etc/pki/balboa/ca.pem /etc/pki/balboa/client.pem
+sudo restorecon -RF /etc/pki/balboa
+```
 Production media never embeds private TLS key contents through these fields.
 The lab procedure embeds only disposable test keys.
 
 If the receiver requires no client certificate, omit both client fields.
 Without a trusted certificate path, the service uses the installed system CA collection.
 The selected receiver must still authenticate through a valid certificate.
+For systemd 257, restrict the receiver to HTTP/1.1 to avoid the observed HTTP/2 upload buffer error.
+This protocol restriction does not disable TLS.
 
 The installer enables upload only when the site supplies this object.
 Without this object, the security assessment reports the selected upload control as a finding.
@@ -76,9 +96,20 @@ Make sure that the receiver retains the test event.
 Make sure that the certificate renewal procedure operates before certificate expiry.
 After corrections, repeat the assessment through [Security policy](security.md).
 
+If the first remediation failed because certificates were absent, restart remediation after certificate provisioning.
+Use the local console because server SSH requires completed remediation.
+The remediation service requests an automatic restart after success.
+
+```sh
+sudo systemctl reset-failed systemd-journal-upload.service balboa-harden.service
+sudo systemctl restart systemd-journal-upload.service
+sudo systemctl restart balboa-harden.service
+```
+
 ## References
 
 The review date is November 8, 2026.
 
 - [Journal upload configuration](https://www.freedesktop.org/software/systemd/man/latest/journal-upload.conf.html)
 - [Service credentials](https://www.freedesktop.org/software/systemd/man/latest/systemd.exec.html#Credentials)
+- [Upstream upload buffer issue](https://github.com/systemd/systemd/issues/39166)

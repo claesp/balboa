@@ -67,13 +67,14 @@ The command publishes its port on host loopback only.
 
 ```sh
 python3 -m balboa lab-logger --directory build/lab-logging
-python3 -m balboa render --flavor server --lab --lab-logging-dir build/lab-logging/client --output build/server
+python3 -m balboa render --flavor server --lab --lab-logging-dir build/lab-logging/client --output build/server-logging
 ```
 
 The certificate authority signs both disposable server and client certificates.
 The certificates expire after two days.
 HAProxy requires a trusted client certificate before it forwards an upload to the receiver.
 The receiver accepts plain HTTP only through container loopback.
+The TLS listener offers HTTP/1.1 to avoid a systemd 257 upload buffer error with HTTP/2.
 
 QEMU reaches host loopback through its isolated network address `10.0.2.2`.
 The lab renderer uses `https://10.0.2.2:19532` by default.
@@ -93,7 +94,7 @@ The QEMU command creates a new fixed-size virtual disk from the manifest.
 The default lab disk contains 32 GB.
 
 ```sh
-python3 -m balboa iso build/server/installation.ks --output build/balboa-server-lab.iso
+python3 -m balboa iso build/server-logging/installation.ks --output build/balboa-server-lab.iso
 python3 -m balboa vm --iso build/balboa-server-lab.iso --workdir build/vm-server-bios --phase install
 ```
 
@@ -112,8 +113,8 @@ The second system boot assesses the installed system.
 The example unlocks the encrypted virtual disk through the serial console.
 
 ```sh
-python3 -m balboa vm --iso build/balboa-server-lab.iso --workdir build/vm-server-bios --phase boot --lab-secrets build/server/lab-secrets.json
-python3 -m balboa vm --iso build/balboa-server-lab.iso --workdir build/vm-server-bios --phase boot --lab-secrets build/server/lab-secrets.json
+python3 -m balboa vm --iso build/balboa-server-lab.iso --workdir build/vm-server-bios --phase boot --lab-secrets build/server-logging/lab-secrets.json
+python3 -m balboa vm --iso build/balboa-server-lab.iso --workdir build/vm-server-bios --phase boot --lab-secrets build/server-logging/lab-secrets.json
 ```
 
 QEMU stops at each requested restart because the command uses `-no-reboot`.

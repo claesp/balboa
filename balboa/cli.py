@@ -137,6 +137,7 @@ def iso(args):
                        (output.parent, "/output", "rw")])
         container(["python3", "/workspace/tests/iso_checks.py", "/media/" + output.name, "/input/" + ks.name],
                   [(ROOT, "/workspace", "ro"), (output.parent, "/media", "ro"), (ks.parent, "/input", "ro")])
+        output.chmod(0o600)
     except BaseException:
         output.unlink(missing_ok=True)
         raise
