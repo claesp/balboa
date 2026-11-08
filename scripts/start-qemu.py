@@ -57,7 +57,7 @@ def prepare(args):
         if not iso.is_file() or "," in str(iso):
             raise ValueError("Select a regular ISO file with no commas in its path.")
         if work.exists() and any(work.iterdir()):
-            raise ValueError("The VM directory is not empty. Use --boot or select a new directory.")
+            raise ValueError(f"The VM directory is not empty: {work}. Use --boot to reuse its disk, or select a new directory.")
         manifest_path = iso.with_suffix(".json")
         manifest = json.loads(manifest_path.read_text()) if manifest_path.is_file() else {}
         expected_bytes = manifest.get("storage", {}).get("disk_bytes", 128_000_000_000)
@@ -133,7 +133,8 @@ def parser():
     mode = result.add_mutually_exclusive_group(required=True)
     mode.add_argument("--iso", type=Path, help="Install an ISO on a new disposable disk.")
     mode.add_argument("--boot", action="store_true", help="Boot the existing disk without installation media.")
-    result.add_argument("--workdir", type=Path, default=ROOT / "build/qemu-laptop")
+    result.add_argument("--workdir", type=Path, default=ROOT / "build/qemu-laptop",
+                        help="VM directory. Default: %(default)s.")
     result.add_argument("--disk-size-gb", type=positive, help="Decimal GB. Default: ISO manifest size, or 128 GB.")
     result.add_argument("--disk-device", choices=("vda", "sda", "nvme0n1"), help="Default: ISO manifest disk, or vda.")
     result.add_argument("--firmware", choices=("bios", "uefi"), help="Default: UEFI for installation, recorded firmware for boot.")

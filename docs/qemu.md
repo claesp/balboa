@@ -14,6 +14,8 @@ See [Build and installation](build.md) for the image build procedure.
 Operate this command from the repository root after the laptop ISO build.
 Replace the example ISO path with the image that you want to install.
 Use a new VM directory for each installation.
+The `--workdir` parameter selects the directory for the virtual disk and saved VM state.
+Its default is `build/qemu-laptop` under the repository root, regardless of the current working directory.
 
 ```sh
 ./scripts/start-qemu.py --iso build/balboa-laptop-dvd.iso --workdir build/qemu-laptop
@@ -33,6 +35,10 @@ GB means 1,000,000,000 bytes.
 The virtual disk file consumes host storage as the guest writes data.
 
 The script refuses installation into a directory that contains files.
+The error shows the full path of that directory.
+Use `--boot` to reuse its virtual disk, or select a new directory for another installation.
+Remove the old directory only if you no longer require its virtual disk and saved state.
+Removal erases the VM data in that directory.
 It attaches a virtual disk and the selected ISO.
 It exposes no inbound host port or shared host directory.
 

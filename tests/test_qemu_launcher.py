@@ -44,8 +44,9 @@ class LauncherTests(unittest.TestCase):
         disk = self.work / "system.qcow2"
         disk.write_bytes(b"keep the existing disk")
         args = self.arguments("--iso", str(self.iso))
-        with patch.object(launcher.subprocess, "run") as run, self.assertRaises(ValueError):
+        with patch.object(launcher.subprocess, "run") as run, self.assertRaises(ValueError) as error:
             launcher.prepare(args)
+        self.assertIn(str(self.work.resolve()), str(error.exception))
         self.assertEqual(disk.read_bytes(), b"keep the existing disk")
         run.assert_not_called()
 
