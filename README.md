@@ -21,8 +21,8 @@ The installer excludes weak dependencies and default group additions.
 | Flavor | Contents |
 | --- | --- |
 | Server | Boot essentials, OpenSSHD, and common security tools |
-| Workstation | The common minimum and a minimal GNOME desktop |
-| Laptop | The minimal GNOME desktop, wireless networking, Bluetooth, firmware, and power management |
+| Workstation | The common minimum, a minimal GNOME desktop, graphical software updates, and Firefox |
+| Laptop | The minimal GNOME desktop, graphical software updates, Firefox, wireless networking, Bluetooth, firmware, and power management |
 
 The server excludes desktop, wireless, Bluetooth, and graphics firmware packages.
 The workstation and laptop omit an SSH server by default.
@@ -59,6 +59,7 @@ Use these documents for each project task:
 | Configure the graphical boot and encrypted disk prompt | [Boot process](docs/boot.md) |
 | Set the logo text and generate boot and desktop images | [Boot and desktop images](docs/branding.md) |
 | Select packages and hardware support | [Minimal flavors](docs/flavors.md) |
+| Examine Firefox privacy policies and update behavior | [Firefox browser](docs/browser.md) |
 | Set disk sizes and mount restrictions | [Fixed storage](docs/storage.md) |
 | Supply credentials and central logging configuration | [Site configuration](docs/site.md) |
 | Examine security controls and release conditions | [Security policy](docs/security.md) |

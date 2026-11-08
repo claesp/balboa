@@ -318,3 +318,34 @@ All 54 local tests pass.
 Eight cleanup tests cover previews, explicit output selection, source protection, symbolic links, open files, and mounted directories.
 The actual cleanup finds no open files among its obsolete output selection.
 The preservation assessment accepts the retained inputs after removal.
+
+## Desktop applications
+
+The November 8 desktop revision adds GNOME Software, PackageKit, and official Rocky Firefox to the workstation and laptop.
+The server package selection remains unchanged.
+Both desktop selections resolve with weak dependencies disabled and their existing exclusions applied.
+The official solver resolves 584 workstation packages and 618 laptop packages.
+
+All 54 local tests pass after the renderer embeds the browser policy.
+The renderer installs that policy only for desktop flavors.
+The generated policy bytes match `guest/firefox-policies.json`.
+The server output contains none of the three applications or the browser policy.
+
+The Firefox runtime assessment passes with the DVD package version 140.10.2 and the repository package version 153.6.0.
+The test reads the effective policy through a local automation connection in a disposable container.
+Both versions accept every configured policy.
+The assessed privacy preferences remain disabled and locked, and the studies feature remains blocked.
+Malware and phishing protection remain enabled.
+
+Both final desktop Kickstart files pass the disposable installation script test.
+The test reads the browser policy from the actual Kickstart instead of a separate source copy.
+It accepts the GNOME Software PackageKit plugin and the live browser privacy assessment for each flavor.
+
+These tests assess application packages and browser privacy enforcement.
+They do not replace a full QEMU installation and CIS assessment of an ISO with the new desktop applications.
+The recorded 429-control laptop assessment describes the earlier package selection.
+Existing ISOs and the active user VM retain their previous contents.
+
+The application test records reside under `build/desktop-apps/`.
+The exact final Kickstart files reside in `final-workstation/` and `final-laptop/` under that directory.
+The Firefox version assessments use `firefox-current.log` and `firefox-dvd.log`.

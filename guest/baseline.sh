@@ -125,6 +125,7 @@ if [[ -f /etc/systemd/journal-upload.conf.d/60-balboa.conf ]]; then
     systemctl enable systemd-journal-upload.service
 fi
 if [[ "$DESKTOP" == yes ]]; then
+    restorecon -RF /etc/firefox
     install -d /etc/dconf/profile /etc/dconf/db/local.d /etc/dconf/db/local.d/locks
     cat > /etc/dconf/db/local.d/00-balboa <<'EOF'
 [org/gnome/desktop/session]

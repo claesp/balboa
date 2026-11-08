@@ -153,6 +153,9 @@ def render_text(flavor, site, disk, kind, lab=False, passphrase=None, disk_gb=No
             files += file_fragment("/usr/share/plymouth/themes/balboa/" + name,
                                    (ROOT / "guest/plymouth" / name).read_text(), mode="0644")
     if definition["desktop"]:
+        files += "install -d -m 0755 /etc/firefox /etc/firefox/policies\n"
+        files += file_fragment("/etc/firefox/policies/policies.json",
+                               (ROOT / "guest/firefox-policies.json").read_text(), mode="0644")
         files += f"install -d -m 0755 {branding.DESKTOP_DIR}\n"
         for name in ("wallpaper.png", "login.png"):
             files += file_fragment(branding.DESKTOP_DIR + "/" + name, assets[name], mode="0644")

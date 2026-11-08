@@ -45,6 +45,7 @@ Balboa retains signature files in `cache/`.
 [Boot process](boot.md) describes the spinner, graphical disk prompt, and startup choices.
 [Boot and desktop images](branding.md) describes the generated logo, text, and images.
 [Minimal flavors](flavors.md) describes package selection and hardware services.
+[Firefox browser](browser.md) describes browser privacy policies and package updates.
 [Fixed storage](storage.md) describes disk sizes, LVM, and mount restrictions.
 [Site configuration](site.md) describes recovery credentials and central logging.
 
