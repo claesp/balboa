@@ -11,6 +11,14 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 def main():
     subprocess.run(["ksvalidator", "-v", "RHEL10", sys.argv[1]], check=True)
+    from pykickstart.parser import KickstartParser
+    from pykickstart.version import makeVersion
+    from balboa.render import validate_keyboard
+
+    parser = KickstartParser(makeVersion("RHEL10"))
+    parser.readKickstart(sys.argv[1])
+    for layout in parser.handler.keyboard.x_layouts:
+        validate_keyboard(layout)
     for script in Path("/workspace/guest").glob("*.sh"):
         subprocess.run(["bash", "-n", str(script)], check=True)
     ds = Path("/usr/share/xml/scap/ssg/content/ssg-rl10-ds.xml")
@@ -31,11 +39,6 @@ def main():
                             "--tailoring-file", str(policy), "--output", temporary + "/guide.html", str(ds)], check=True)
     if "--packages" in sys.argv:
         import dnf
-        from pykickstart.parser import KickstartParser
-        from pykickstart.version import makeVersion
-
-        parser = KickstartParser(makeVersion("RHEL10"))
-        parser.readKickstart(sys.argv[1])
         with tempfile.TemporaryDirectory() as temporary, dnf.Base() as base:
             base.conf.cachedir = temporary
             base.conf.persistdir = temporary

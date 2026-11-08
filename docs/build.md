@@ -58,6 +58,8 @@ Both password fields can contain the same digest.
 Retain the root password in the approved recovery vault.
 Put the public key contents in `ssh_public_key` in `site.json`.
 Set the hostname and local language fields in `site.json`.
+Use an XKB layout identifier for `keyboard`, such as `se` for Swedish or `us` for US English.
+See [Keyboard and language](site.md#keyboard-and-language) for the supported names and locale fields.
 Use a separate administrator name that does not identify a system account.
 The renderer rejects reserved names such as `root` and `operator`.
 
@@ -111,6 +113,8 @@ For workstations, replace `server` with `workstation` and use a new output direc
 For laptops, replace `server` with `laptop` and use a new output directory.
 The renderer rejects an existing output directory that contains files.
 The boot ISO command also requires a successful package availability test.
+After a keyboard change, render a new Kickstart and rebuild the ISO.
+Previously generated images retain the previous keyboard configuration.
 
 The disk parameter also accepts `disk/by-id/` identifiers.
 Use a stable identifier when disk enumeration can change.

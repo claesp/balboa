@@ -15,6 +15,12 @@ from .policy import EXCLUSIONS, tailoring
 ROOT = Path(__file__).resolve().parent.parent
 
 
+def validate_keyboard(layout):
+    supported = json.loads((ROOT / "data/keyboards.json").read_text())["layouts"]
+    if layout not in supported:
+        raise ValueError("The keyboard field requires a supported XKB layout. Use se for Swedish or us for US English. See data/keyboards.json.")
+
+
 def valid_site(site):
     patterns = {
         "hostname": r"[a-z0-9](?:[a-z0-9.-]{0,251}[a-z0-9])?",
@@ -32,6 +38,7 @@ def valid_site(site):
     for key, pattern in patterns.items():
         if not isinstance(site[key], str) or not re.fullmatch(pattern, site[key]):
             raise ValueError(f"The site field {key} is not permitted.")
+    validate_keyboard(site["keyboard"])
     root_hash = site["root_password_hash"]
     if not isinstance(root_hash, str) or not re.fullmatch(patterns["password_hash"], root_hash):
         raise ValueError("The root console password requires a SHA512 crypt digest.")

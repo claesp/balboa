@@ -12,6 +12,7 @@ Use these locations for changes:
 - `flavors/` contains package selections and security profile identifiers.
 - `kickstarts/` contains the common installation template.
 - `storage/` contains fixed disk sizes and the LVM allocation policy.
+- `data/keyboards.json` contains supported XKB layout names and their source package identity.
 - `guest/` contains the installed hardening and assessment programs.
 - `balboa/` contains the commands for builds and tests.
 - `tests/` contains tests for security boundaries and image contents.
@@ -64,6 +65,10 @@ An unreviewed key change removes the authentication boundary.
 Record the new ISO filename and digest in `sources.lock.json`.
 Record the official container digest in the same file.
 Rebuild the tools and do all flavor tests after the source change.
+
+For keyboard catalog updates, use `rules/base.xml` from the official Rocky `xkeyboard-config` package.
+Retain layout identifiers only when the package supplies their files under `/usr/share/X11/xkb/symbols/`.
+Record the package identity in `data/keyboards.json` after the update.
 
 ## Update installed systems
 

@@ -80,6 +80,17 @@ class PipelineTests(unittest.TestCase):
             with self.subTest(uid=uid,gid=gid,mode=mode), self.assertRaises(ValueError):
                 validate_key_access(SimpleNamespace(st_uid=uid, st_gid=gid, st_mode=mode), 321)
 
+    def test_keyboard_rejects_language_codes_and_console_keymap_names(self):
+        for keyboard in ("sv", "se-latin1", "not-a-layout"):
+            with self.subTest(keyboard=keyboard), self.assertRaisesRegex(ValueError, "supported XKB layout"):
+                valid_site({**self.site, "keyboard": keyboard})
+
+    def test_swedish_xkb_layout_renders_for_every_flavor(self):
+        for flavor in ("server", "workstation", "laptop"):
+            with self.subTest(flavor=flavor):
+                text, _ = render_text(flavor, {**self.site, "keyboard": "se"}, "vda", "boot")
+                self.assertIn("\nkeyboard --xlayouts=se\n", text)
+
     def test_required_root_and_optional_logging_configuration(self):
         site = {**self.site,
                 "journal_upload": {"url": "https://logs.example.test:19532",

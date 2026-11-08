@@ -22,6 +22,29 @@ SSH root login remains disabled.
 The installer starts password aging from the installation date.
 Account passwords expire after 90 days.
 
+## Keyboard and language
+
+An XKB layout defines the keyboard keys.
+The `keyboard` field requires a supported XKB layout identifier.
+The renderer uses that value in `keyboard --xlayouts` in Kickstart.
+
+Use `se` for Swedish or `us` for US English.
+The value `sv` is a language code and is not a keyboard layout.
+The console keymap name `se-latin1` is not an XKB layout identifier.
+
+A locale selects language and regional text formats.
+The `language` field selects the locale independently from the keyboard layout.
+For a Swedish keyboard and Swedish language, use these site fields:
+
+```json
+"keyboard": "se",
+"language": "sv_SE.UTF-8"
+```
+
+The supported layout names appear in [the keyboard catalog](../data/keyboards.json).
+The catalog records layouts from the official Rocky Linux `xkeyboard-config` package.
+The renderer and ISO preflight tests reject names outside that catalog.
+
 ## Central journal receiver
 
 A journal receiver accepts structured system log events.
