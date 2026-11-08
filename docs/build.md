@@ -61,15 +61,30 @@ Set the hostname and local language fields in `site.json`.
 Use a separate administrator name that does not identify a system account.
 The renderer rejects reserved names such as `root` and `operator`.
 
-Create a bootloader password digest on a Rocky Linux host with `grub2-tools` installed.
 The bootloader starts the installed operating system.
 Its password protects changes to boot commands.
 
+Create the bootloader password digest with Podman on the build host.
+The command uses the official Rocky Linux 10 image.
+It installs `grub2-tools-minimal` inside a disposable container.
+The command requires network access to obtain the image and package.
+
 ```sh
-grub2-mkpasswd-pbkdf2
+podman run --rm -it docker.io/rockylinux/rockylinux:10 \
+  bash -c 'dnf -y --setopt=install_weak_deps=False install grub2-tools-minimal &&
+           exec grub2-mkpasswd-pbkdf2 --iteration-count=100000'
 ```
 
-Put the resulting `grub.pbkdf2.sha512` digest in `bootloader_password_hash` in `site.json`.
+Enter the password twice when the utility prompts.
+The utility uses 100000 iterations to create the digest.
+
+On a Rocky Linux host with `grub2-tools-minimal` installed, operate the utility directly:
+
+```sh
+grub2-mkpasswd-pbkdf2 --iteration-count=100000
+```
+
+Put the full resulting `grub.pbkdf2.sha512...` digest in `bootloader_password_hash` in `site.json`.
 Use a unique password that differs from the account and disk passwords.
 Keep that password in the approved recovery vault.
 
