@@ -79,6 +79,34 @@ These startup tests do not replace the full installation and security assessment
 The GTK window requires examination in a graphical host session.
 See [Interactive QEMU tests](qemu.md) for the installation and later boot commands.
 
+## Unattended 128 GB installation
+
+The laptop DVD completes installation on a 128 GB NVMe disk with UEFI.
+The image uses the production renderer with disposable credentials and `--luks-passphrase-file`.
+The keyboard layout is Swedish `se`.
+
+The guest disk is `nvme0n1` and contains exactly 128000000000 bytes.
+Anaconda marks Installation Destination as completed before partition creation.
+The installer creates EFI and boot partitions, an encrypted physical volume, and all eight specified logical volumes.
+
+The installer requests no LUKS setup passphrase.
+Its post-installation programs report `BALBOA_INSTALL_COMPLETE`, and the machine powers off.
+The fixed 128 GB allocation requires no size correction.
+
+This test uses the official DVD kernel and initrd with serial console arguments.
+It covers installation and storage preparation.
+The completed CIS assessment results remain those from the 32 GB tests.
+
+The private test artifacts remain under `build/luks-storage-check/`.
+The serial log is `vm-nvme-uefi/install.log` under that directory.
+The file `installation-summary.json` records the result without the passphrase.
+
+The disposable DVD ISO has this SHA256 digest:
+
+```text
+76a95dc318565c1a8be67419b02e4949802ee513384c8a5aab3ce05444af5d04
+```
+
 ## Content identity
 
 The tool image contains `scap-security-guide-0.1.82-2.el10_2.rocky.1.1`.
@@ -131,11 +159,12 @@ Create a new collector directory and new lab media for later test sessions.
 
 Full CIS conformance requires the release procedure in [Security policy](security.md).
 Passing automatic assessments do not cover every manual or organizational control.
-The full installation tests use 32 GB disks.
+The full CIS assessment tests use 32 GB disks.
 The local suite tests the 128 GB allocation calculation and fixed sizes.
-Production media still requires interactive installation tests with site credentials and deployed logging configuration.
+Production media still requires tests with actual site credentials and deployed logging configuration.
 
-DVD installation, UEFI USB boot, and Secure Boot require separate tests.
+The remaining DVD flavor and firmware combinations require separate installation tests.
+UEFI USB boot and Secure Boot require separate tests.
 The other BIOS and UEFI flavor combinations require separate tests.
 Laptop wireless operation, suspend, resume, and docking require physical hardware tests.
 Site controls require an approved benchmark review and retained evidence.

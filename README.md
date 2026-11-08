@@ -45,6 +45,7 @@ The project does not claim CIS certification or conformance to an unmodified ben
 
 Production builds require a root console password.
 SSH root login remains disabled.
+An optional private file supplies the disk encryption passphrase during unattended installation.
 Central logging values remain deployment-time configuration.
 See [Security policy](docs/security.md) and [Site configuration](docs/site.md) before production release.
 
