@@ -5,6 +5,8 @@ Kickstart is a file that controls an installation.
 An ISO is a file that contains installation media.
 
 The project customizes official Rocky Linux media with Kickstart files.
+Installation and initial hardening use only packages from the locked DVD.
+Later approved updates use official Rocky repositories.
 The [source lock](sources.lock.json) fixes the media version, image identity, and signing key.
 Podman supplies build tools and installation syntax tests.
 QEMU supplies disposable virtual machines for installation and security tests.
@@ -59,6 +61,8 @@ Use these documents for each project task:
 | Configure the graphical boot and encrypted disk prompt | [Boot process](docs/boot.md) |
 | Set the logo text and generate boot and desktop images | [Boot and desktop images](docs/branding.md) |
 | Select packages and hardware support | [Minimal flavors](docs/flavors.md) |
+| Examine X1 Carbon Gen 13 compatibility and hardware tests | [Lenovo X1 Carbon Gen 13](docs/lenovo-x1.md) |
+| Examine DVD package restrictions and review missing packages | [Package sources](docs/package-sources.md) |
 | Examine Firefox privacy policies and update behavior | [Firefox browser](docs/browser.md) |
 | Set disk sizes and mount restrictions | [Fixed storage](docs/storage.md) |
 | Supply credentials and central logging configuration | [Site configuration](docs/site.md) |

@@ -143,6 +143,8 @@ The fixed log sizes require a capacity review for production workloads.
 
 ## Laptop decisions
 
+The [X1 Carbon Gen 13 review](lenovo-x1.md) records the selected Lenovo platform and its remaining physical tests.
+
 CIS Level 2 can conflict with wireless access and removable media.
 The laptop flavor does not silently remove those controls.
 The security owner must review each conflict before deployment.
@@ -187,6 +189,51 @@ For unattended installation, the optional `luks_passphrase` site field supplies 
 The site JSON file, Kickstart, and ISO then contain that key.
 Restrict access to these artifacts because they contain the plaintext installation key.
 Do not put passphrases in kernel arguments.
+
+## Updated security content
+
+Updated security content can add controls that require changes before the next assessment passes.
+The DVD policy still applies only to installation and initial hardening.
+Do not remove the `remediated` marker after package updates.
+Initial hardening rejects installed package versions outside the DVD inventory.
+
+Retain the previous evidence before this procedure.
+Review the updated controls and approve their remediation through the site maintenance process.
+Operate these commands at the installed system console after the approved security content update:
+
+```sh
+sudo bash <<'SH'
+set -euo pipefail
+source /etc/balboa/image.conf
+out=/var/lib/balboa/evidence
+scan=0
+(umask 022; oscap xccdf eval --remediate \
+    --tailoring-file /etc/balboa/tailoring.xml --profile "$PROFILE" \
+    --results "$out/remediation-updated.xml" --report "$out/remediation-updated.html" \
+    /usr/share/xml/scap/ssg/content/ssg-rl10-ds.xml) || scan=$?
+[[ "$scan" == 0 || "$scan" == 2 ]]
+if [[ "$DESKTOP" == yes ]]; then
+    find /etc/dconf/db -maxdepth 1 -type f -exec chmod 0644 {} +
+fi
+python3 /usr/local/libexec/balboa/native_checks.py > "$out/native-after-update.json"
+SH
+```
+
+The OpenSCAP command accepts status 2 because remediation can require another assessment or restart.
+The desktop command retains readable dconf databases after remediation.
+Examine the updated remediation report before the next commands.
+
+After approval of the resulting changes, refresh the AIDE database at the installed system console:
+
+```sh
+sudo aide --init
+sudo mv /var/lib/aide/aide.db.new.gz /var/lib/aide/aide.db.gz
+```
+
+The refreshed database accepts the current files as the integrity baseline.
+Do not accept unexplained file changes through this step.
+Do the assessment again through [Operation and recovery](#operation-and-recovery).
+Require a passing assessment before release.
 
 ## References
 

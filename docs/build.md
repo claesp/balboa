@@ -16,23 +16,25 @@ The host requires these tools:
 - OVMF firmware for UEFI tests
 
 Operate all repository commands from the repository root.
-Reserve at least 8 GiB for a boot ISO and one server test.
-Reserve more space for desktop tests and DVD images.
+Reserve at least 30 GiB for the source DVD, one custom ISO, and a server test.
+Reserve more space for desktop tests and retained evidence.
 
 ## Prepare the tools
 
 The container base digest appears in `sources.lock.json`.
-Package installation uses the official Rocky repositories.
+The container build installs its tools from the official Rocky repositories.
 The container build requires network access.
 
 ```sh
 python3 -m balboa tools
-python3 -m balboa fetch --kind boot
+python3 -m balboa fetch --kind dvd
 ```
 
 The source command requires a matching signature, signing key, and ISO digest.
 The lock file fixes the media version.
 The command retains the downloaded ISO for later builds.
+Target installation and initial hardening use only the locked DVD package versions.
+See [Package sources](package-sources.md) for enforcement and the review procedure for missing packages.
 
 ## Create production media
 
@@ -107,7 +109,7 @@ The installer erases that disk and all its partitions.
 
 ```sh
 python3 -m balboa render --flavor server --site site.json --disk nvme0n1 --output build/production-server
-python3 -m balboa validate build/production-server/installation.ks
+python3 -m balboa validate build/production-server/installation.ks --packages
 python3 -m balboa iso build/production-server/installation.ks --output build/balboa-server.iso
 ```
 
@@ -120,7 +122,7 @@ Use `--no-boot-splash` for a text boot without the Plymouth packages.
 For workstations, replace `server` with `workstation` and use a new output directory.
 For laptops, replace `server` with `laptop` and use a new output directory.
 The renderer rejects an existing output directory that contains files.
-The boot ISO command also requires a successful package availability test.
+The ISO command requires a successful offline DVD dependency test.
 After a keyboard change, render a new Kickstart and rebuild the ISO.
 Previously generated images retain the previous keyboard configuration.
 
@@ -186,9 +188,9 @@ The installed system still requires disk unlock at each boot.
 
 ## DVD media
 
-The DVD permits package installation without network access.
-The Kickstart source type must match the source ISO type.
-The ISO command rejects a manifest with a different source type.
+The DVD supplies all installation packages without network access.
+The builder defaults to DVD media and rejects network boot media for installation.
+Every ISO build resolves dependencies from the authenticated DVD with network access disabled.
 
 ```sh
 python3 -m balboa fetch --kind dvd
@@ -196,14 +198,14 @@ python3 -m balboa render --flavor laptop --kind dvd --site site.json --disk nvme
 python3 -m balboa iso build/laptop-dvd/installation.ks --kind dvd --output build/balboa-laptop-dvd.iso
 ```
 
-The DVD package collection can differ from the online repositories.
+The DVD package collection differs from the online repositories.
 Do an installation test of each selected DVD flavor.
 Apply approved updates before release.
 The locked DVD contains SCAP Security Guide 0.1.80 with a known account-shell assessment defect.
 The defect can report a valid administrator shell as invalid.
 The [upstream correction](https://github.com/ComplianceAsCode/content/pull/14751) fixes the final account entry in `/etc/passwd`.
 
-After a DVD installation, apply the approved security content update at the installed system console.
+After successful initial hardening, apply the approved security content update at the installed system console.
 This command requires network access to the official Rocky repositories.
 Retain the previous evidence before another assessment.
 
@@ -211,7 +213,9 @@ Retain the previous evidence before another assessment.
 sudo dnf -y upgrade scap-security-guide openscap-scanner
 ```
 
-Use [Operation and recovery](security.md#operation-and-recovery) to repeat the assessment after approved updates.
+Use [Updated security content](security.md#updated-security-content) for approved remediation after a security content update.
+Updated security content can introduce new controls that require approved remediation before the assessment passes.
+Review those changes and refresh the AIDE database through the site maintenance process.
 The release test must pass with the updated content.
 
 ## Boot interfaces
@@ -239,6 +243,7 @@ Secure Boot still requires a separate firmware test.
 ## Artifact records
 
 Each ISO has a JSON manifest and a package list for the tools.
+It also has a `.dvd-packages.json` report for the offline dependency selection.
 The manifest records the source digest, Kickstart digest, flavor, and security profile.
 It also records the local tool image identity and source lock digest.
 The installed system records its package list and datastream digest separately.
@@ -250,8 +255,9 @@ Production artifacts also contain a disk passphrase when the site file supplies 
 The ISO builder sets the image file mode to `0600`.
 
 The build is auditable but not byte reproducible.
-Online package repositories change over time.
-For controlled releases, use approved repository snapshots and retain their metadata.
+The target installation uses fixed DVD package versions.
+Online repositories for build tools and later installed system updates change over time.
+For controlled releases, retain the tool package records, update records, and their repository metadata.
 
 ## References
 

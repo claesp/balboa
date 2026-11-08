@@ -24,10 +24,18 @@ useradd --uid 1000 balboasmoke
 chage --lastday -1 balboasmoke
 install -d /etc/balboa /usr/local/libexec/balboa
 cp /workspace/guest/*.sh /usr/local/libexec/balboa/
-install -d -m 0755 /usr/share/fonts/balboa
-install -m 0644 /workspace/assets/fonts/Inter-Regular.ttf /usr/share/fonts/balboa/
-install -d /etc/fonts/conf.d
-install -m 0644 /workspace/guest/Inter.conf /etc/fonts/conf.d/55-balboa-inter.conf
+install -m 0755 /workspace/guest/package_source.py /usr/local/libexec/balboa/
+splash=$(python3 - "$ks" <<'PYTHON'
+import json, pathlib, sys
+print("yes" if json.loads(pathlib.Path(sys.argv[1]).with_suffix(".json").read_text())["boot_splash"] else "no")
+PYTHON
+)
+if [[ "$desktop" == yes || "$splash" == yes ]]; then
+    install -d -m 0755 /usr/share/fonts/balboa
+    install -m 0644 /workspace/assets/fonts/Inter-Regular.ttf /usr/share/fonts/balboa/
+    install -d /etc/fonts/conf.d
+    install -m 0644 /workspace/guest/Inter.conf /etc/fonts/conf.d/55-balboa-inter.conf
+fi
 printf 'FLAVOR=%s\nADMIN_USER=balboasmoke\nDESKTOP=%s\nLAB=no\n' "$flavor" "$desktop" > /etc/balboa/image.conf
 python3 - "$flavor" <<'PY'
 import json
@@ -61,18 +69,11 @@ PYTHON
 fi
 install -d -m 0755 /boot/grub2/themes/balboa
 install -m 0644 "$(dirname "$ks")/branding/boot.png" /boot/grub2/themes/balboa/boot.png
-splash=$(python3 - "$ks" <<'PYTHON'
-import json, pathlib, sys
-print("yes" if json.loads(pathlib.Path(sys.argv[1]).with_suffix(".json").read_text())["boot_splash"] else "no")
-PYTHON
-)
 printf 'BOOT_SPLASH=%s\n' "$splash" >> /etc/balboa/image.conf
 if [[ "$splash" == yes ]]; then
     install -d -m 0755 /usr/share/plymouth/themes/balboa
     install -m 0644 /workspace/guest/plymouth/* /usr/share/plymouth/themes/balboa/
 fi
-install -d /usr/lib/systemd/system-generators
-install -m 0755 /workspace/guest/journal-upload-generator.sh /usr/lib/systemd/system-generators/60-balboa-journal-upload
 bash /workspace/guest/baseline.sh
 if [[ "$splash" == yes ]]; then
     [[ "$(plymouth-set-default-theme)" == balboa ]]

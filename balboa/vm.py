@@ -98,7 +98,20 @@ def decode_evidence(stream, archive):
     archive.write_bytes(payload)
 
 
+def inspect_dvd_evidence(manifest, evidence):
+    if not manifest.get("package_source_policy"):
+        return
+    for name in ("native-before.json", "native-after.json", "native-initial-complete.json"):
+        path = evidence / name
+        if not path.is_file():
+            raise ValueError(f"The guest lacks initial DVD package evidence: {name}.")
+        record = json.loads(path.read_text())
+        if record.get("passed") is not True or record.get("dvd_package_versions") != "passed":
+            raise ValueError(f"The initial DVD package assessment did not pass: {name}.")
+
+
 def inspect_system(manifest, evidence, definition):
+    inspect_dvd_evidence(manifest, evidence)
     if not json.loads((evidence / "native-final.json").read_text())["passed"]:
         raise ValueError("The native Rocky policy tests did not pass.")
     packages = {line.rsplit("-", 2)[0] for line in (evidence / "packages.txt").read_text().splitlines()}

@@ -6,7 +6,7 @@ The tests use authenticated Rocky Linux 10.2 boot and DVD media.
 
 ## Completed tests
 
-The local suite contains 54 passing tests.
+The local suite contains 59 passing tests.
 It includes site input restrictions, report assessment, guest archive restrictions, and expected OpenSCAP exit handling.
 The suite also tests the serial unlock procedure and installer error detection.
 The local suite accepts matching root console and administrator password digests for all three flavors.
@@ -349,3 +349,71 @@ Existing ISOs and the active user VM retain their previous contents.
 The application test records reside under `build/desktop-apps/`.
 The exact final Kickstart files reside in `final-workstation/` and `final-laptop/` under that directory.
 The Firefox version assessments use `firefox-current.log` and `firefox-dvd.log`.
+
+## DVD package policy and X1 review
+
+The November 8 policy limits installation and initial hardening to the authenticated Rocky 10.2 DVD package versions.
+Later approved official updates remain available.
+The committed DVD inventory contains 5614 package identities.
+
+All three final selections resolve from DVD metadata inside containers with network access disabled.
+The server resolves 272 packages, the workstation resolves 583, and the laptop resolves 617.
+The selection includes the explicit kernel and the desktop audio additions.
+The preflight rejects a package absent from the DVD and an added network repository.
+
+All 59 local tests pass.
+The tests cover source defaults, inventory identity, exact package versions, repository restoration, and required initial provenance records.
+The final laptop ISO passes embedded Kickstart and BIOS/UEFI boot structure tests.
+It completes a fresh UEFI installation on the fixed 32 GB encrypted LVM test disk.
+
+The first runtime test exposes a conflict between the earlier journal generator and DVD security remediation.
+The final source removes that generator and retains the vendor journal unit.
+A bounded NetworkManager startup wait replaces the generator workaround.
+The service retains its vendor security directives and normal enabling behavior.
+
+All three initial native reports accept every installed package version against the DVD inventory.
+The reports also accept signing keys, package exclusions, and private key access permissions.
+The system completes initial hardening before it restores the normal repository paths.
+
+The original DVD content assessment reports 425 passes, three not-applicable results, and one account-shell finding.
+That finding matches the known defect in SCAP Security Guide 0.1.80.
+The test retains those original reports before any package update.
+
+After initial hardening, the test installs approved official security content updates.
+The installed versions are `scap-security-guide-0.1.82-2.el10_2.rocky.1.1` and `openscap-scanner-1.4.4-1.el10_2`.
+The test applies the updated remediation and refreshes the AIDE database before another assessment.
+The final assessment reports 429 passes, three not-applicable results, and no findings.
+The native assessment and host storage assessment also pass.
+SELinux remains enforcing, journal upload remains active, and the system reports zero failed units.
+
+The final server and workstation installation script tests pass in disposable Podman containers.
+The workstation test also accepts the live Firefox privacy policy and the GNOME Software PackageKit plugin.
+The full laptop QEMU installation supplies the final laptop installation and hardening evidence.
+
+A separate test receiver on port 19534 triggers an SELinux `name_connect` denial in the upload domain.
+The test retains enforcement and changes the deployment endpoint to the standard journal port 19532.
+The upload service then reports an active state.
+The retained audit record identifies the denied port and domain.
+
+With the virtual network link disconnected, the corrected system reaches its graphical target in 8.045 seconds of userspace time.
+The NetworkManager wait returns status 1, which the bounded wait configuration accepts without a failed unit.
+The journal upload service retries through its vendor unit and retains its security directives.
+SELinux remains enforcing, and the offline system reports zero failed units.
+This test measures one virtual machine and does not establish physical laptop startup times.
+
+The X1 Carbon Gen 13 review uses Lenovo specifications, Lenovo Linux support records, and Red Hat hardware records.
+The DVD contains the reviewed Intel graphics, wireless, Bluetooth, and audio modules and firmware.
+The image explicitly adds the missing PulseAudio-compatible service and ALSA UCM profiles.
+No physical X1 acceptance result is claimed.
+See [Lenovo X1 Carbon Gen 13](lenovo-x1.md) for device-specific limits and tests.
+
+The test records reside under `build/dvd-policy/`.
+The final laptop render is `laptop-final/`, and the final test VM directory is `vm-laptop-final/`.
+The source reports use the `.dvd-packages.json` suffix.
+The original DVD assessment resides in `vm-laptop-final/collected-dvd-original/evidence/`.
+The updated assessment resides in `vm-laptop-final/collected-updated/evidence/`.
+The offline boot record is `vm-laptop-final/console-offline.log`.
+The regenerated inventory matches the committed inventory byte for byte.
+
+The temporary log receiver stops after these tests.
+The active user VM and its existing installation media retain their previous contents.

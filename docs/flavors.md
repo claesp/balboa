@@ -34,6 +34,7 @@ The root account and password authentication remain disabled for SSH.
 The workstation adds explicit packages for a minimal GNOME session.
 It includes GDM, the desktop shell, the session manager, and the control center.
 It also includes a terminal and key storage support.
+It explicitly includes `pipewire-pulseaudio` and `alsa-ucm` for desktop audio.
 GNOME Software supplies a graphical interface for applications and system updates.
 PackageKit supplies its package management service.
 The default image omits the optional Nautilus file manager.
@@ -114,6 +115,8 @@ Do the dependency test before the next ISO build.
 python3 -m balboa validate build/laptop/installation.ks --packages
 ```
 
-The dependency test uses only official BaseOS and AppStream repositories.
+The dependency test uses only BaseOS and AppStream from the authenticated DVD.
 The test applies package exclusions and disables weak dependencies.
-An unresolved dependency prevents a boot ISO build.
+An unavailable package or unresolved dependency stops the ISO build and requires review.
+See [Package sources](package-sources.md) for that review procedure.
+See [Lenovo X1 Carbon Gen 13](lenovo-x1.md) for the laptop hardware findings.

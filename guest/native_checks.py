@@ -33,6 +33,7 @@ def validate_key_access(metadata, expected_gid):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--install-keys", action="store_true")
+    parser.add_argument("--dvd-only", action="store_true")
     args = parser.parse_args()
     policy = json.loads(Path("/etc/balboa/native-policy.json").read_text())
     key = Path("/etc/pki/rpm-gpg/RPM-GPG-KEY-Rocky-10")
@@ -51,9 +52,18 @@ def main():
         raise ValueError("The system contains excluded packages: " + ", ".join(sorted(forbidden)))
     if policy.get("journal_client_key"):
         validate_key_access(Path(policy["journal_client_key"]).stat(), grp.getgrnam("balboa-logs").gr_gid)
+    if args.dvd_only:
+        from package_source import validate_installed
+        inventory = json.loads(Path('/etc/balboa/dvd-packages.json').read_text())
+        if inventory['dvd_sha256'] != policy['dvd_sha256']:
+            raise ValueError('The installed DVD inventory does not match the source policy.')
+        installed = subprocess.run(['rpm', '-qa', '--qf', '%{NAME}|%{EPOCHNUM}|%{VERSION}|%{RELEASE}|%{ARCH}\n'],
+                                   check=True, capture_output=True, text=True).stdout.splitlines()
+        validate_installed(installed, inventory)
     print(json.dumps({"passed": True, "rocky_key_fingerprint": policy["key_fingerprint"],
                       "observed_file_fingerprints": sorted(file_keys), "observed_rpm_fingerprints": sorted(rpm_keys),
                       "excluded_packages_absent": True,
+                      "dvd_package_versions": "passed" if args.dvd_only else "not assessed after initial hardening",
                       "journal_private_key_permissions": "passed" if policy.get("journal_client_key") else "not configured"}, indent=2))
 
 

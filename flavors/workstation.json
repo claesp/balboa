@@ -9,6 +9,8 @@
     "gnome-software",
     "PackageKit",
     "firefox",
+    "pipewire-pulseaudio",
+    "alsa-ucm",
     "ptyxis",
     "gnome-keyring",
     "gnome-keyring-pam",

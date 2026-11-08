@@ -58,6 +58,8 @@ GRUB skips discovery of other operating systems when it creates its configuratio
 The fixed images do not require that discovery step.
 
 The first boot still applies the full security policy and creates the AIDE database.
+Initial hardening uses the installed DVD package versions and denies IP traffic from the hardening service.
+See [Package sources](package-sources.md) for the initial repository restriction and later updates.
 The next boot still assesses that policy after a restart.
 These initial tasks take longer than an ordinary boot.
 
@@ -65,14 +67,19 @@ After successful remediation, the hardening service disables its automatic start
 This avoids a network dependency from that service on later boots.
 The audit service still performs its required assessment after restart.
 
-A generator is a program that creates systemd configuration.
-The journal upload generator prepares its unit at boot and after each daemon reload.
-It reads the current vendor unit and removes only its network readiness dependencies.
-It retains the vendor security directives and follows package updates.
+NetworkManager waits at most five seconds for its startup attempt during boot.
+An offline timeout completes that wait without a failed unit.
+NetworkManager continues connection attempts after the wait.
+The images use local storage and local account authentication.
+Before adding remote mounts or network account services, review this bounded wait.
 
-Journal upload then starts without a boot dependency on network readiness.
+Journal upload retains its vendor unit and security directives.
 Its service retries failed uploads after 15 seconds.
 Persistent journald storage retains the local events while the receiver is unavailable.
+
+The earlier journal unit generator is removed because generated units prevent normal service enabling during DVD security remediation.
+The timeout drop-in changes only the network startup wait command and its result handling.
+The [NetworkManager manual](https://networkmanager.dev/docs/api/latest/nm-online.html) describes the startup timeout.
 
 The images retain the LUKS key derivation cost.
 They retain the required security services and firmware support.

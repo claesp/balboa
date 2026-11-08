@@ -13,6 +13,7 @@ import subprocess
 from urllib.parse import urlsplit
 
 from . import branding
+from .dvd import catalog, CATALOG, source_policy
 from .storage import kickstart_volumes, layout
 from .policy import EXCLUSIONS, tailoring
 
@@ -115,6 +116,8 @@ def file_fragment(path, content, executable=False, mode=None):
 
 
 def render_text(flavor, site, disk, kind, lab=False, passphrase=None, disk_gb=None, lab_tls=None):
+    if kind != "dvd":
+        raise ValueError("Installation packages must come from the locked DVD. Use --kind dvd.")
     valid_site(site)
     if not lab:
         if passphrase is not None:
@@ -132,7 +135,7 @@ def render_text(flavor, site, disk, kind, lab=False, passphrase=None, disk_gb=No
     splash = site.get("boot_splash", not lab)
     storage = layout(disk_gb, lab)
     files = ""
-    for name in ("baseline.sh", "branding.sh", "plymouth.sh", "harden.sh", "audit.sh", "failure.sh", "export.sh", "result_gate.py", "native_checks.py"):
+    for name in ("baseline.sh", "branding.sh", "plymouth.sh", "harden.sh", "audit.sh", "failure.sh", "export.sh", "result_gate.py", "native_checks.py", "package_source.py"):
         files += file_fragment("/usr/local/libexec/balboa/" + name, (ROOT / "guest" / name).read_text(), True)
     assets = branding.images(site.get("branding_text", "Balboa"))
     files += f"install -d -m 0755 {branding.BOOT_DIR}\n"
@@ -161,16 +164,19 @@ def render_text(flavor, site, disk, kind, lab=False, passphrase=None, disk_gb=No
             files += file_fragment(branding.DESKTOP_DIR + "/" + name, assets[name], mode="0644")
     for name in ("balboa-harden.service", "balboa-audit.service"):
         files += file_fragment("/etc/systemd/system/" + name, (ROOT / "guest" / name).read_text())
-    files += file_fragment("/usr/lib/systemd/system-generators/60-balboa-journal-upload",
-                           (ROOT / "guest/journal-upload-generator.sh").read_text(), True)
+    files += "install -d -m 0755 /etc/systemd/system/NetworkManager-wait-online.service.d\n"
+    files += file_fragment("/etc/systemd/system/NetworkManager-wait-online.service.d/60-balboa-timeout.conf",
+                           (ROOT / "guest/network-wait.conf").read_text(), mode="0644")
     profile_id, tailoring_xml = tailoring(flavor, definition["profile"])
     files += file_fragment("/etc/balboa/tailoring.xml", tailoring_xml)
     native = {"key_fingerprint": json.loads((ROOT / "sources.lock.json").read_text())["key_fingerprint"],
               "key_fingerprints": json.loads((ROOT / "sources.lock.json").read_text())["rpm_key_fingerprints"],
-              "excluded_packages": definition["exclude"]}
+              "excluded_packages": definition["exclude"], "dvd_sha256": catalog()["dvd_sha256"]}
     if site.get("journal_upload", {}).get("client_key_file"):
         native["journal_client_key"] = site["journal_upload"]["client_key_file"]
     files += file_fragment("/etc/balboa/native-policy.json", json.dumps(native))
+    catalog()
+    files += file_fragment("/etc/balboa/dvd-packages.json", CATALOG.read_bytes())
     if lab_tls:
         if not lab:
             raise ValueError("Disposable TLS material requires lab mode.")
@@ -205,10 +211,7 @@ def render_text(flavor, site, disk, kind, lab=False, passphrase=None, disk_gb=No
             f"BOOT_SPLASH={'yes' if splash else 'no'}\nDESKTOP={'yes' if definition['desktop'] else 'no'}\nLAB={'yes' if lab else 'no'}\n"
             f"ROOT_PASSWORD_CONFIGURED={'yes' if site.get('root_password_hash') else 'no'}\n")
     files += file_fragment("/etc/balboa/image.conf", conf)
-    source = ('url --url="https://dl.rockylinux.org/pub/rocky/10/BaseOS/x86_64/os/"\n'
-              'repo --name=AppStream --baseurl="https://dl.rockylinux.org/pub/rocky/10/AppStream/x86_64/os/"')
-    if kind == "dvd":
-        source = "cdrom"
+    source = "cdrom"
     values = {key.upper(): value for key, value in site.items()}
     values.update({"MODE": "cmdline" if lab else "text", "SOURCE": source, "DISK": disk,
                    "ROOTPW": "rootpw --iscrypted " + site["root_password_hash"],
@@ -294,6 +297,7 @@ def render(args):
                 "boot_splash": site["boot_splash"],
                 "policy_deviations": EXCLUSIONS,
                 "disk": disk, "source_kind": args.kind,
+                "package_source_policy": source_policy(),
                 "storage": layout(args.disk_size_gb, args.lab),
                 "kickstart_sha256": hashlib.sha256(text.encode()).hexdigest()}
     path.with_suffix(".json").write_text(json.dumps(metadata, indent=2) + "\n")

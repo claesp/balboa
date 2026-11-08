@@ -6,6 +6,7 @@ import json
 import os
 from pathlib import Path
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -105,13 +106,26 @@ def container(argv, mounts=(), network="none", capture_output=False):
 def validate(args):
     ks = args.kickstart.resolve()
     command = ["python3", "/workspace/tests/container_checks.py", "/input/" + ks.name]
-    if getattr(args, "packages", False):
-        command += ["--packages"]
-    container(command, [(ROOT, "/workspace", "ro"), (ks.parent, "/input", "ro")],
-              network="slirp4netns" if getattr(args, "packages", False) else "none")
+    mounts = [(ROOT, "/workspace", "ro"), (ks.parent, "/input", "ro")]
+    if not getattr(args, "packages", False):
+        container(command, mounts)
+        return
+    image = source_lock()["images"]["dvd"]
+    source = getattr(args, "cache", ROOT / "cache").resolve() / image["filename"]
+    if sha256(source) != image["sha256"]:
+        raise ValueError("The DVD digest does not match the source lock.")
+    with tempfile.TemporaryDirectory(prefix="balboa-dvd-report-") as temporary:
+        mounts += [(source.parent, "/source", "ro"), (temporary, "/report", "rw")]
+        command += ["--packages", "--dvd", "/source/" + source.name, "--report", "/report/packages.json"]
+        container(command, mounts)
+        destination = ks.with_suffix(".dvd-packages.json")
+        shutil.copyfile(Path(temporary) / "packages.json", destination)
+        destination.chmod(0o600)
 
 
 def iso(args):
+    if args.kind != "dvd":
+        raise ValueError("Installation packages must come from the locked DVD. Use --kind dvd.")
     lock = source_lock()
     image = lock["images"][args.kind]
     source = args.cache.resolve() / image["filename"]
@@ -119,13 +133,16 @@ def iso(args):
         raise ValueError("The source ISO digest does not match the source lock.")
     ks = args.kickstart.resolve()
     metadata = json.loads(ks.with_suffix(".json").read_text())
+    from .dvd import source_policy
+    if metadata.get("package_source_policy") != source_policy():
+        raise ValueError("The Kickstart predates the DVD source policy. Render it again before ISO creation.")
     if sha256(ks) != metadata["kickstart_sha256"] or metadata["source_kind"] != args.kind:
         raise ValueError("The Kickstart manifest does not match the image request.")
     output = args.output.resolve()
     if output.exists():
         raise ValueError("The output ISO exists. Select a new path.")
     output.parent.mkdir(parents=True, exist_ok=True)
-    validate(argparse.Namespace(kickstart=ks, packages=args.kind == "boot"))
+    validate(argparse.Namespace(kickstart=ks, packages=True, cache=args.cache))
     cmdline = "console=tty0 console=ttyS0,115200n8" if metadata["lab"] else ""
     boot_menu = ["--replace", "set timeout=60", "set timeout=5"] if metadata["lab"] else []
     try:
@@ -149,6 +166,9 @@ def iso(args):
                                       capture_output=True, text=True).stdout.strip()
     tool_packages = container(["rpm", "-qa"], capture_output=True).stdout
     output.with_suffix(".packages.txt").write_text(tool_packages)
+    report = ks.with_suffix(".dvd-packages.json")
+    shutil.copyfile(report, output.with_suffix(".dvd-packages.json"))
+    metadata["dvd_dependency_report_sha256"] = sha256(report)
     output.with_suffix(".json").write_text(json.dumps(metadata, indent=2) + "\n")
     print(output)
 
@@ -157,14 +177,14 @@ def parser():
     result = argparse.ArgumentParser(description=__doc__)
     commands = result.add_subparsers(dest="command", required=True)
     get = commands.add_parser("fetch", help="Download and authenticate an official ISO.")
-    get.add_argument("--kind", choices=("boot", "dvd"), default="boot")
+    get.add_argument("--kind", choices=("boot", "dvd"), default="dvd")
     get.add_argument("--cache", type=Path, default=ROOT / "cache")
     get.set_defaults(func=fetch)
     build = commands.add_parser("tools", help="Build the Rocky Linux tool container.")
     build.set_defaults(func=tools_build)
     generate = commands.add_parser("render", help="Create a Kickstart for one flavor.")
     generate.add_argument("--flavor", choices=("server", "workstation", "laptop"), required=True)
-    generate.add_argument("--kind", choices=("boot", "dvd"), default="boot")
+    generate.add_argument("--kind", choices=("dvd",), default="dvd")
     generate.add_argument("--boot-splash", action=argparse.BooleanOptionalAction, default=None,
                           help="Animated Plymouth splash. Defaults: production enabled, lab disabled.")
     generate.add_argument("--branding-text", help="Text below the logo. Overrides site branding_text. Default: Balboa.")
@@ -179,11 +199,12 @@ def parser():
     generate.set_defaults(func=render)
     syntax = commands.add_parser("validate", help="Do syntax and security-content tests in Podman.")
     syntax.add_argument("kickstart", type=Path)
-    syntax.add_argument("--packages", action="store_true", help="Also query official package repositories.")
+    syntax.add_argument("--packages", action="store_true", help="Resolve selected packages from the locked DVD without network access.")
+    syntax.add_argument("--cache", type=Path, default=ROOT / "cache")
     syntax.set_defaults(func=validate)
     media = commands.add_parser("iso", help="Embed a Kickstart into official media.")
     media.add_argument("kickstart", type=Path)
-    media.add_argument("--kind", choices=("boot", "dvd"), default="boot")
+    media.add_argument("--kind", choices=("dvd",), default="dvd")
     media.add_argument("--cache", type=Path, default=ROOT / "cache")
     media.add_argument("--output", type=Path, required=True)
     media.add_argument("--native", action="store_true", help="Use host mkksiso, including the UEFI USB image.")

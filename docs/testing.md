@@ -37,14 +37,15 @@ They require the Rocky datastream and both CIS Level 2 profile titles.
 They also do syntax tests of the guest shell scripts.
 
 For package availability, add `--packages` on the build host.
-This test requires network access to the official Rocky repositories.
-It examines package names and installation environments before ISO creation.
+This test requires the authenticated DVD in `cache/`.
+It resolves package names, versions, groups, and dependencies from DVD metadata without network access.
+Every ISO build requires this offline package test.
 
 ```sh
 python3 -m balboa validate build/laptop/installation.ks --packages
 ```
 
-The parser does not assess package availability or installation behavior.
+Without `--packages`, the parser does not assess package availability or installation behavior.
 A successful parser result does not prove a successful installation.
 Use QEMU for those tests.
 

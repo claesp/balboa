@@ -133,6 +133,9 @@ If the receiver requires no client certificate, omit both client fields.
 Without a trusted certificate path, the service uses the installed system CA collection.
 The selected receiver must still authenticate through a valid certificate.
 For systemd 257, restrict the receiver to HTTP/1.1 to avoid the observed HTTP/2 upload buffer error.
+The local test procedure uses journal port `19532`, which the installed SELinux policy permits.
+For another receiver port, review the SELinux port policy before deployment.
+Keep SELinux enforcement active during that review and its connection test.
 This protocol restriction does not disable TLS.
 
 The installer enables upload only when the site supplies this object.

@@ -22,6 +22,7 @@ if (( $(id -u "$ADMIN_USER") < 1000 )); then
     exit 1
 fi
 install -d -m 0700 /var/lib/balboa/evidence
+python3 /usr/local/libexec/balboa/package_source.py guard
 install -d /etc/ssh/sshd_config.d /etc/sysctl.d /etc/security/pwquality.conf.d /etc/audit/rules.d
 cat > /etc/ssh/sshd_config.d/00-balboa.conf <<'EOF'
 PermitRootLogin no
@@ -150,5 +151,4 @@ fi
 firewall-offline-cmd --set-default-zone=drop
 restorecon -RF /etc/balboa /usr/local/libexec/balboa /etc/systemd/system
 
-restorecon -F /usr/lib/systemd/system-generators/60-balboa-journal-upload
 bash /usr/local/libexec/balboa/branding.sh

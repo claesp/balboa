@@ -27,6 +27,7 @@ poweroff
 
 %packages --excludedocs --exclude-weakdeps
 @core --nodefaults
+kernel
 @@PACKAGES@@
 audit
 audit-rules

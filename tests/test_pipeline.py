@@ -89,7 +89,7 @@ class PipelineTests(unittest.TestCase):
     def test_swedish_xkb_layout_renders_for_every_flavor(self):
         for flavor in ("server", "workstation", "laptop"):
             with self.subTest(flavor=flavor):
-                text, _ = render_text(flavor, {**self.site, "keyboard": "se"}, "vda", "boot")
+                text, _ = render_text(flavor, {**self.site, "keyboard": "se"}, "vda", "dvd")
                 self.assertIn("\nkeyboard --xlayouts=se\n", text)
 
     def test_required_root_and_optional_logging_configuration(self):
@@ -99,7 +99,7 @@ class PipelineTests(unittest.TestCase):
                                    "client_certificate_file": "/etc/pki/balboa/client.pem",
                                    "client_key_file": "/etc/pki/balboa/client.key"}}
         valid_site(site)
-        text, _ = render_text("server", site, "vda", "boot")
+        text, _ = render_text("server", site, "vda", "dvd")
         self.assertIn("rootpw --iscrypted " + self.site["root_password_hash"], text)
         self.assertIn("/etc/systemd/journal-upload.conf.d/60-balboa.conf", text)
         self.assertIn("install -d -m 0755 /etc/systemd/journal-upload.conf.d", text)
@@ -118,17 +118,17 @@ class PipelineTests(unittest.TestCase):
         valid_site(site)
         for flavor in ("server", "workstation", "laptop"):
             with self.subTest(flavor=flavor):
-                text, _ = render_text(flavor, site, "vda", "boot")
+                text, _ = render_text(flavor, site, "vda", "dvd")
                 self.assertIn("rootpw --iscrypted " + site["password_hash"], text)
                 self.assertIn("--groups=wheel --iscrypted --password=" + site["password_hash"], text)
 
     def test_disposable_tls_never_enters_production_or_uses_other_paths(self):
         tls = {"ca.pem": "test CA", "client.pem": "test certificate", "client.key": "test private key"}
         with self.assertRaises(ValueError):
-            render_text("server", self.site, "vda", "boot", lab_tls=tls)
+            render_text("server", self.site, "vda", "dvd", lab_tls=tls)
         with self.assertRaises(ValueError):
-            render_text("server", self.site, "vda", "boot", True, "a" * 40, lab_tls={"../../etc/passwd": "value"})
-        text, _ = render_text("server", self.site, "vda", "boot", True, "a" * 40, lab_tls=tls)
+            render_text("server", self.site, "vda", "dvd", True, "a" * 40, lab_tls={"../../etc/passwd": "value"})
+        text, _ = render_text("server", self.site, "vda", "dvd", True, "a" * 40, lab_tls=tls)
         self.assertIn("chmod 0600 /etc/pki/balboa/client.key", text)
         self.assertIn("chmod 0644 /etc/pki/balboa/ca.pem", text)
         self.assertIn("install -d -m 0755 /etc/pki/balboa", text)
@@ -144,15 +144,15 @@ class PipelineTests(unittest.TestCase):
 
     def test_production_requires_disk_and_defaults_to_interactive_encryption(self):
         with self.assertRaises(ValueError):
-            render_text("server", self.site, None, "boot")
+            render_text("server", self.site, None, "dvd")
         with self.assertRaises(ValueError):
-            render_text("server", self.site, "sda,sdb", "boot")
-        text, _ = render_text("server", self.site, "disk/by-id/nvme-Example_123", "boot")
+            render_text("server", self.site, "sda,sdb", "dvd")
+        text, _ = render_text("server", self.site, "disk/by-id/nvme-Example_123", "dvd")
         self.assertIn("--only-use=disk/by-id/nvme-Example_123", text)
         self.assertIn("--encrypted --luks-version=luks2\n", text)
         self.assertNotIn("--passphrase", text)
         self.assertNotIn("@@", text)
-        text, _ = render_text("server", {**self.site, "luks_passphrase": None}, "vda", "boot")
+        text, _ = render_text("server", {**self.site, "luks_passphrase": None}, "vda", "dvd")
         self.assertNotIn("--passphrase", text)
 
     def test_production_embeds_only_an_explicit_luks_passphrase(self):
@@ -199,11 +199,11 @@ class PipelineTests(unittest.TestCase):
     def test_luks_accepts_five_characters_and_keeps_lab_secrets_long(self):
         import shlex
         for secret in ("test5", "a" * 128):
-            text, _ = render_text("laptop", {**self.site, "luks_passphrase": secret}, "vda", "boot")
+            text, _ = render_text("laptop", {**self.site, "luks_passphrase": secret}, "vda", "dvd")
             line = next(line for line in text.splitlines() if line.startswith("part pv.01"))
             self.assertIn("--passphrase=" + secret, shlex.split(line))
         with self.assertRaises(ValueError):
-            render_text("laptop", self.site, "vda", "boot", True, "test5")
+            render_text("laptop", self.site, "vda", "dvd", True, "test5")
 
     def test_boot_splash_defaults_opt_out_and_graphical_lab(self):
         for flavor in ("server", "workstation", "laptop"):
@@ -211,7 +211,7 @@ class PipelineTests(unittest.TestCase):
                 site = {**self.site}
                 if lab == enabled:
                     site["boot_splash"] = enabled
-                text, _ = render_text(flavor, site, "vda", "boot", lab,
+                text, _ = render_text(flavor, site, "vda", "dvd", lab,
                                       "a" * 40 if lab else None)
                 boot = next(line for line in text.splitlines() if line.startswith("bootloader "))
                 self.assertEqual("rhgb quiet" in boot, enabled)
@@ -253,24 +253,6 @@ class PipelineTests(unittest.TestCase):
         corrupt.write_bytes(b"not the approved photo")
         with patch.object(branding, "PHOTO", corrupt), self.assertRaisesRegex(ValueError, "does not match"):
             branding.sources()
-
-    def test_upload_generator_removes_only_network_wait_dependencies(self):
-        repository = Path(__file__).resolve().parents[1]
-        vendor = self.root / "vendor.service"
-        vendor.write_text("[Unit]\nWants=network-online.target other.service\nAfter=network-online.target other.service\nRequires=secure.service\n[Service]\nDynamicUser=yes\nPrivateDevices=yes\nExecStart=/usr/lib/systemd/systemd-journal-upload --save-state\n")
-        program = self.root / "generator"
-        program.write_text((repository / "guest/journal-upload-generator.sh").read_text().replace(
-            "/usr/lib/systemd/system/systemd-journal-upload.service", str(vendor)))
-        output = self.root / "generated units"
-        subprocess.run(["sh", str(program), str(output)], check=True)
-        unit = (output / "systemd-journal-upload.service").read_text()
-        self.assertNotIn("network-online.target", unit)
-        self.assertIn("Wants=other.service", unit)
-        self.assertIn("After=other.service network.target", unit)
-        self.assertIn("Requires=secure.service", unit)
-        self.assertIn("DynamicUser=yes", unit)
-        self.assertIn("PrivateDevices=yes", unit)
-        self.assertIn("ExecStart=/usr/lib/systemd/systemd-journal-upload --save-state", unit)
 
     def test_branding_rejects_controls_and_escapes_literal_text(self):
         from balboa import branding
@@ -316,7 +298,7 @@ class PipelineTests(unittest.TestCase):
             "-format", "%[fx:minima.a] %[fx:maxima.a] %[fx:p{0,0}.a]", "info:"],
             capture_output=True, text=True, check=True).stdout
         self.assertEqual(alpha, "0 1 0")
-        server, _ = render_text("server", self.site, "vda", "boot")
+        server, _ = render_text("server", self.site, "vda", "dvd")
         self.assertIn(branding.BOOT_DIR + "/boot.png", server)
         self.assertNotIn(" > " + branding.DESKTOP_DIR + "/wallpaper.png", server)
         self.assertNotIn(" > " + branding.DESKTOP_DIR + "/login.png", server)
@@ -343,14 +325,14 @@ class PipelineTests(unittest.TestCase):
     def test_lab_requires_isolated_disk_and_generated_secret(self):
         for disk, secret in (("sda", "a" * 40), ("vda", None), ("vda", 'x"\n%post')):
             with self.subTest(disk=disk), self.assertRaises(ValueError):
-                render_text("server", self.site, disk, "boot", True, secret)
-        text, _ = render_text("server", self.site, "vda", "boot", True, "a" * 40)
+                render_text("server", self.site, disk, "dvd", True, secret)
+        text, _ = render_text("server", self.site, "vda", "dvd", True, "a" * 40)
         self.assertIn('--passphrase="' + "a" * 40 + '"', text)
         self.assertIn("cmdline\n", text)
 
     def test_flavors_select_correct_profile_and_source(self):
         for flavor in ("server", "workstation", "laptop"):
-            for kind in ("boot", "dvd"):
+            for kind in ("dvd",):
                 with self.subTest(flavor=flavor, kind=kind):
                     text, definition = render_text(flavor, self.site, "vda", kind)
                     expected = PROFILE if flavor == "server" else PROFILE + "_workstation_l2"
@@ -502,10 +484,12 @@ class PipelineTests(unittest.TestCase):
         config = self.root / "image.conf"
         config.write_text(f"PROFILE={PROFILE}\nBASE_PROFILE={PROFILE}\nLAB=no\nFLAVOR=workstation\nDESKTOP=no\n")
         replacements = {"/etc/balboa/image.conf": str(config), "/var/lib/balboa": str(state),
+                        "/etc/dnf/dnf.conf": str(self.root / "dnf.conf"),
+                        "/etc/balboa/initial-repos.d": str(self.root / "initial-repos.d"),
                         "/etc/aide.conf": str(self.root / "aide.conf"),
                         "/usr/local/libexec/balboa": str(guest), "/var/lib/aide": str(aide),
                         "/usr/share/xml/scap/ssg/content": str(content)}
-        for name in ("harden.sh", "audit.sh", "failure.sh", "result_gate.py"):
+        for name in ("harden.sh", "audit.sh", "failure.sh", "result_gate.py", "package_source.py"):
             text = (repository / "guest" / name).read_text()
             for old, new in replacements.items():
                 text = text.replace(old, new)

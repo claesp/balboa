@@ -21,15 +21,12 @@ The host requires Python 3.11 or later, curl, and GnuPG.
 The command authenticates the signed digest before it accepts the ISO.
 
 ```sh
-python3 -m balboa fetch --kind boot
 python3 -m balboa fetch --kind dvd
 ```
 
 The source lock selects Rocky Linux 10.2 for x86_64.
 Rocky Linux requires an x86-64-v3 processor for this architecture.
-The boot ISO requires network access during installation.
-
-The DVD contains packages for installation without network access.
+The builder requires DVD packages for installation and initial hardening.
 Package updates still require network access.
 Balboa retains signature files in `cache/`.
 
@@ -46,6 +43,8 @@ Balboa retains signature files in `cache/`.
 [Boot and desktop images](branding.md) describes the generated logo, text, and images.
 [Minimal flavors](flavors.md) describes package selection and hardware services.
 [Firefox browser](browser.md) describes browser privacy policies and package updates.
+[Package sources](package-sources.md) defines DVD restrictions and the review procedure for missing packages.
+[Lenovo X1 Carbon Gen 13](lenovo-x1.md) records hardware compatibility findings and physical acceptance requirements.
 [Fixed storage](storage.md) describes disk sizes, LVM, and mount restrictions.
 [Site configuration](site.md) describes recovery credentials and central logging.
 

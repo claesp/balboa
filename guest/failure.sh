@@ -3,6 +3,9 @@
 balboa_failure() {
     local status=$?
     trap - ERR
+    if [[ ! -e /var/lib/balboa/remediated ]]; then
+        python3 /usr/local/libexec/balboa/package_source.py guard || true
+    fi
     printf '%s\n' "$status" > /var/lib/balboa/evidence/service-exit-status
     journalctl -b -u systemd-journal-upload.service --no-pager > /var/lib/balboa/evidence/journal-upload.log || true
     if [[ "$LAB" == yes ]]; then

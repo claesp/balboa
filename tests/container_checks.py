@@ -39,7 +39,34 @@ def main():
                             "--tailoring-file", str(policy), "--output", temporary + "/guide.html", str(ds)], check=True)
     if "--packages" in sys.argv:
         import dnf
+        import argparse
+        from balboa.dvd import catalog, extract_metadata, inventory
+        arguments = argparse.ArgumentParser()
+        arguments.add_argument('kickstart')
+        arguments.add_argument('--packages', action='store_true')
+        arguments.add_argument('--dvd', type=Path, required=True)
+        arguments.add_argument('--report', type=Path, required=True)
+        options = arguments.parse_args()
+        if parser.handler.method.method != 'cdrom' or parser.handler.repo.repoList:
+            raise ValueError('Installation must use only the DVD. Other package sources require review.')
+        from balboa.render import file_fragment
+        text = Path(sys.argv[1]).read_text()
+        required = [('baseline.sh', '/usr/local/libexec/balboa/baseline.sh', True),
+                    ('harden.sh', '/usr/local/libexec/balboa/harden.sh', True),
+                    ('failure.sh', '/usr/local/libexec/balboa/failure.sh', True),
+                    ('native_checks.py', '/usr/local/libexec/balboa/native_checks.py', True),
+                    ('package_source.py', '/usr/local/libexec/balboa/package_source.py', True),
+                    ('balboa-harden.service', '/etc/systemd/system/balboa-harden.service', False)]
+        for name, destination, executable in required:
+            expected = file_fragment(destination, (Path('/workspace/guest') / name).read_text(), executable)
+            if expected not in text:
+                raise ValueError('The Kickstart lacks the current initial package guard. Render it again.')
         with tempfile.TemporaryDirectory() as temporary, dnf.Base() as base:
+            directory = Path(temporary) / 'dvd'
+            extract_metadata(options.dvd, directory)
+            record = catalog()
+            if inventory(directory) != record['packages']:
+                raise ValueError('The DVD package inventory differs from the reviewed catalog.')
             base.conf.cachedir = temporary
             base.conf.persistdir = temporary
             base.conf.logdir = temporary
@@ -47,23 +74,27 @@ def main():
             base.conf.excludepkgs = parser.handler.packages.excludedList
             for repository, directory in (("baseos", "BaseOS"), ("appstream", "AppStream")):
                 base.repos.add_new_repo(repository, base.conf,
-                                        baseurl=[f"https://dl.rockylinux.org/pub/rocky/10/{directory}/x86_64/os/"])
+                                        baseurl=[f"file://{temporary}/dvd/{directory}/"])
             base.fill_sack(load_system_repo=False)
             base.read_comps()
             for package in parser.handler.packages.packageList:
                 if not base.sack.query().available().filter(name=package):
-                    raise ValueError(f"The official repositories do not contain {package}.")
+                    raise ValueError(f"The locked DVD does not contain {package}. Review the package before inclusion.")
                 base.install(package)
             environment = parser.handler.packages.environment
             if environment and not base.comps.environment_by_pattern(environment):
-                raise ValueError(f"The official repositories do not contain {environment}.")
+                raise ValueError(f"The locked DVD does not contain environment {environment}. Review it before inclusion.")
             for group in parser.handler.packages.groupList:
                 if not base.comps.group_by_pattern(group.name):
-                    raise ValueError(f"The official repositories do not contain {group.name}.")
+                    raise ValueError(f"The locked DVD does not contain group {group.name}. Review it before inclusion.")
                 base.group_install(group.name, ("mandatory",), exclude=parser.handler.packages.excludedList)
             base.resolve()
+            selected = sorted('|'.join((p.name, str(p.epoch), p.version, p.release, p.arch))
+                              for p in base.transaction.install_set)
+            options.report.write_text(json.dumps({'dvd_sha256': record['dvd_sha256'],
+                                                  'packages': selected, 'network': 'none'}, indent=2) + '\n')
             print(f"The minimal selection resolves to {len(base.transaction.install_set)} packages.")
-        print("The selected packages and dependencies resolve in the official repositories.")
+        print("The selected packages and dependencies resolve from the locked DVD without network access.")
     print("Kickstart syntax, shell syntax, and Rocky CIS Level 2 profile tests passed.")
 
 
