@@ -18,6 +18,7 @@ from .storage import kickstart_volumes, layout
 from .policy import EXCLUSIONS, tailoring
 
 ROOT = Path(__file__).resolve().parent.parent
+LOCALE_PACKAGES = {"en_US.UTF-8": "glibc-langpack-en", "sv_SE.UTF-8": "glibc-langpack-sv"}
 
 
 def validate_luks_passphrase(value):
@@ -59,12 +60,16 @@ def valid_site(site):
         "language": r"[a-z]{2}_[A-Z]{2}\.UTF-8",
     }
     required = set(patterns) | {"root_password_hash"}
-    if not required <= set(site) or set(site) - required - {"journal_upload", "luks_passphrase", "branding_text", "boot_splash"}:
+    optional = {"journal_upload", "luks_passphrase", "branding_text", "boot_splash", "additional_locales"}
+    if not required <= set(site) or set(site) - required - optional:
         raise ValueError("The site file contains missing or unknown fields.")
     for key, pattern in patterns.items():
         if not isinstance(site[key], str) or not re.fullmatch(pattern, site[key]):
             raise ValueError(f"The site field {key} is not permitted.")
     validate_keyboard(site["keyboard"])
+    locales = site.get("additional_locales", [])
+    if not isinstance(locales, list) or any(not isinstance(locale, str) or locale not in LOCALE_PACKAGES for locale in locales):
+        raise ValueError("The additional_locales field requires a list of supported locales. Use en_US.UTF-8 or sv_SE.UTF-8.")
     branding.validate_text(site.get("branding_text", "Balboa"))
     if "boot_splash" in site and type(site["boot_splash"]) is not bool:
         raise ValueError("The boot_splash field requires true or false.")
@@ -132,7 +137,11 @@ def render_text(flavor, site, disk, kind, lab=False, passphrase=None, disk_gb=No
     if passphrase is not None:
         validate_luks_passphrase(passphrase)
     definition = json.loads((ROOT / "flavors" / f"{flavor}.json").read_text())
+    locales = site.get("additional_locales", LOCALE_PACKAGES if definition["desktop"] else ())
+    packages = definition["packages"] + list(dict.fromkeys(LOCALE_PACKAGES[locale] for locale in locales))
     splash = site.get("boot_splash", not lab)
+    if splash:
+        packages += ["plymouth-theme-script", "plymouth-plugin-label", "plymouth-scripts", "fontconfig"]
     storage = layout(disk_gb, lab)
     files = ""
     for name in ("baseline.sh", "branding.sh", "plymouth.sh", "harden.sh", "audit.sh", "failure.sh", "export.sh", "result_gate.py", "native_checks.py", "package_source.py"):
@@ -234,7 +243,7 @@ def render_text(flavor, site, disk, kind, lab=False, passphrase=None, disk_gb=No
                    "DISPLAY": "xconfig --startxonboot" if definition["desktop"] else "skipx",
                    "PV_MIB": str(storage["pv_mib"]), "BOOT_MIB": str(storage["boot_mib"]),
                    "VOLUMES": kickstart_volumes(storage),
-                   "PACKAGES": "\n".join(definition["packages"] + (["plymouth-theme-script", "plymouth-plugin-label", "plymouth-scripts", "fontconfig"] if splash else []) + ["-" + p for p in definition["exclude"]]), "FILES": files})
+                   "PACKAGES": "\n".join(packages + ["-" + p for p in definition["exclude"]]), "FILES": files})
     template = (ROOT / "kickstarts/base.ks.in").read_text()
     field = r"@@([A-Z_]+)@@"
     if set(re.findall(field, template)) - set(values) or "@@" in re.sub(field, "", template):

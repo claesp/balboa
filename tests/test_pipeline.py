@@ -92,6 +92,28 @@ class PipelineTests(unittest.TestCase):
                 text, _ = render_text(flavor, {**self.site, "keyboard": "se"}, "vda", "dvd")
                 self.assertIn("\nkeyboard --xlayouts=se\n", text)
 
+    def test_default_locale_packages_are_desktop_only(self):
+        for flavor in ("server", "workstation", "laptop"):
+            with self.subTest(flavor=flavor):
+                text, _ = render_text(flavor, self.site, "vda", "dvd")
+                self.assertIn("\nlang en_US.UTF-8\n", text)
+                for package in ("glibc-langpack-en", "glibc-langpack-sv"):
+                    self.assertEqual(f"\n{package}\n" in text, flavor != "server")
+
+    def test_site_can_select_additional_locales_independently_of_language(self):
+        site = {**self.site, "additional_locales": ["sv_SE.UTF-8", "sv_SE.UTF-8"]}
+        text, _ = render_text("laptop", site, "vda", "dvd")
+        self.assertIn("\nlang en_US.UTF-8\n", text)
+        self.assertEqual(text.count("\nglibc-langpack-sv\n"), 1)
+        self.assertNotIn("\nglibc-langpack-en\n", text)
+        text, _ = render_text("laptop", {**site, "additional_locales": []}, "vda", "dvd")
+        self.assertNotIn("\nglibc-langpack-sv\n", text)
+
+    def test_site_rejects_invalid_additional_locales(self):
+        for locales in (None, "sv_SE.UTF-8", ["sv"], ["de_DE.UTF-8"], [{}], ["sv_SE.UTF-8\n%end"]):
+            with self.subTest(locales=locales), self.assertRaisesRegex(ValueError, "additional_locales"):
+                valid_site({**self.site, "additional_locales": locales})
+
     def test_required_root_and_optional_logging_configuration(self):
         site = {**self.site,
                 "journal_upload": {"url": "https://logs.example.test:19532",

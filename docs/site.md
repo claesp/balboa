@@ -32,8 +32,8 @@ Use `se` for Swedish or `us` for US English.
 The value `sv` is a language code and is not a keyboard layout.
 The console keymap name `se-latin1` is not an XKB layout identifier.
 
-A locale selects language and regional text formats.
-The `language` field selects the locale independently from the keyboard layout.
+A locale defines a language and regional formats.
+The `language` field sets the default locale independently from the keyboard layout.
 For a Swedish keyboard and Swedish language, use these site fields:
 
 ```json
@@ -44,6 +44,45 @@ For a Swedish keyboard and Swedish language, use these site fields:
 The supported layout names appear in [the keyboard catalog](../data/keyboards.json).
 The catalog records layouts from the official Rocky Linux `xkeyboard-config` package.
 The renderer and ISO preflight tests reject names outside that catalog.
+
+## Desktop languages and formats
+
+The laptop and workstation include English (United States) and Swedish (Svenska) by default.
+The locale identifiers are `en_US.UTF-8` and `sv_SE.UTF-8`.
+The installer gets the locale packages from the locked Rocky DVD.
+GNOME can show other regions that the same packages supply.
+
+Use `additional_locales` in the site file to select which locale packages the build adds explicitly.
+The field accepts a list of the two locale identifiers.
+Use an empty list to omit the extra locale packages.
+The `language` field still sets the default locale and requests its usual installer support.
+For the server, `additional_locales` defaults to an empty list.
+
+For example, use US English as the default and add Swedish support explicitly:
+
+```json
+"language": "en_US.UTF-8",
+"additional_locales": ["sv_SE.UTF-8"]
+```
+
+### Select separate language and formats
+
+Open **Settings → System → Region & Language** on the installed desktop.
+Under **Your Account**, select **English (United States)** in **Language**.
+Select **Sweden** in **Formats**.
+If Sweden does not appear in the first list, expand the list and search for Sweden.
+Log out and log in again to apply the changes. [GNOME format help](https://help.gnome.org/gnome-help/session-formats.html)
+
+### Add Swedish to an existing desktop
+
+Use this command on the installed laptop or workstation after initial hardening and the first assessment finish.
+The command installs the locale packages from Rocky BaseOS.
+
+```sh
+sudo dnf --disablerepo='*' --enablerepo=baseos install glibc-langpack-en glibc-langpack-sv
+```
+
+Close and reopen GNOME Settings after installation.
 
 ## Disk encryption
 
