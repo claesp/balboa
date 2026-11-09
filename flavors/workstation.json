@@ -6,8 +6,8 @@
     "gnome-session",
     "gnome-settings-daemon",
     "gnome-control-center",
-    "gnome-software",
-    "PackageKit",
+    "dnf-automatic",
+    "dnf-plugins-core",
     "firefox",
     "pipewire-pulseaudio",
     "alsa-ucm",
@@ -18,6 +18,9 @@
     "intel-gpu-firmware"
   ],
   "exclude": [
+    "gnome-software",
+    "PackageKit",
+    "flatpak",
     "openssh-server",
     "NetworkManager-wifi",
     "NetworkManager-bluetooth",

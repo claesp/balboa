@@ -359,6 +359,10 @@ class PipelineTests(unittest.TestCase):
                     self.assertNotIn("@^", text)
                     self.assertIn("--exclude-weakdeps", text)
                     self.assertNotIn("--grow", text)
+                    self.assertEqual("\ndnf-automatic\n" in text, flavor != "server")
+                    self.assertEqual(" > /etc/dnf/automatic.conf\n" in text, flavor != "server")
+                    self.assertEqual(" > /etc/systemd/system/dnf-automatic.service.d/60-balboa-guard.conf\n" in text,
+                                     flavor != "server")
 
     def test_storage_has_fixed_sizes_and_identical_test_mounts(self):
         production = layout()

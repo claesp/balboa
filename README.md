@@ -6,7 +6,7 @@ An ISO is a file that contains installation media.
 
 The project customizes official Rocky Linux media with Kickstart files.
 Installation and initial hardening use only packages from the locked DVD.
-Later approved updates use official Rocky repositories.
+Later updates use the configured Rocky repositories and the laptop EPEL repository.
 The [source lock](sources.lock.json) fixes the media version, image identity, and signing key.
 Podman supplies build tools and installation syntax tests.
 QEMU supplies disposable virtual machines for installation and security tests.
@@ -23,8 +23,8 @@ The installer excludes weak dependencies and default group additions.
 | Flavor | Contents |
 | --- | --- |
 | Server | Boot essentials, OpenSSHD, and common security tools |
-| Workstation | The common minimum, a minimal GNOME desktop, graphical software updates, and Firefox |
-| Laptop | The minimal GNOME desktop, graphical software updates, Firefox, wireless networking, Bluetooth, firmware, and power management |
+| Workstation | The common minimum, a minimal GNOME desktop, automatic security updates, and Firefox |
+| Laptop | The minimal GNOME desktop, automatic security updates, Firefox, wireless networking, Bluetooth, firmware, and power management |
 
 The server excludes desktop, wireless, Bluetooth, and graphics firmware packages.
 The workstation and laptop omit an SSH server by default.
@@ -64,6 +64,7 @@ Use these documents for each project task:
 | Examine X1 Carbon Gen 13 compatibility and hardware tests | [Lenovo X1 Carbon Gen 13](docs/lenovo-x1.md) |
 | Examine DVD package restrictions and review missing packages | [Package sources](docs/package-sources.md) |
 | Examine Firefox privacy policies and update behavior | [Firefox browser](docs/browser.md) |
+| Manage desktop security updates and repositories | [Desktop package updates](docs/updates.md) |
 | Set disk sizes and mount restrictions | [Fixed storage](docs/storage.md) |
 | Supply credentials and central logging configuration | [Site configuration](docs/site.md) |
 | Examine security controls and release conditions | [Security policy](docs/security.md) |

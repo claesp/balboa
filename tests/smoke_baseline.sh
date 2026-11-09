@@ -45,24 +45,26 @@ definition = json.loads(Path('/workspace/flavors', sys.argv[1] + '.json').read_t
 Path('/etc/balboa/native-policy.json').write_text(json.dumps({'excluded_packages': definition['exclude']}))
 PY
 if [[ "$desktop" == yes ]]; then
-    install -d -m 0755 /etc/firefox/policies
     python3 - "$ks" <<'PYTHON'
 import base64
 import json
 from pathlib import Path
 import shlex
 import sys
-destination = '/etc/firefox/policies/policies.json'
-lines = [line for line in Path(sys.argv[1]).read_text().splitlines() if line.endswith(' > ' + destination)]
-if len(lines) != 1:
-    raise ValueError('The desktop Kickstart requires one Firefox policy file.')
-command = shlex.split(lines[0])
-if command[:2] != ['printf', '%s'] or command[3:] != ['|', 'base64', '-d', '>', destination]:
-    raise ValueError('The Firefox policy uses an unexpected file format.')
-policy = base64.b64decode(command[2], validate=True)
-json.loads(policy)
-Path(destination).write_bytes(policy)
-Path(destination).chmod(0o644)
+lines = Path(sys.argv[1]).read_text().splitlines()
+for destination in ('/etc/firefox/policies/policies.json', '/etc/dnf/automatic.conf',
+                    '/etc/systemd/system/dnf-automatic.service.d/60-balboa-guard.conf'):
+    line, = (line for line in lines if line.endswith(' > ' + destination))
+    command = shlex.split(line)
+    if command[:2] != ['printf', '%s'] or command[3:] != ['|', 'base64', '-d', '>', destination]:
+        raise ValueError(f'The file {destination} uses an unexpected format.')
+    data = base64.b64decode(command[2], validate=True)
+    if destination.endswith('.json'):
+        json.loads(data)
+    path = Path(destination)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(data)
+    path.chmod(0o644)
 PYTHON
     install -d -m 0755 /usr/share/backgrounds/balboa
     install -m 0644 "$(dirname "$ks")/branding/wallpaper.png" "$(dirname "$ks")/branding/login.png" /usr/share/backgrounds/balboa/
@@ -94,7 +96,14 @@ if [[ "$desktop" == yes ]]; then
     [[ "$(runuser -u balboasmoke -- gsettings get org.gnome.desktop.background picture-uri)" == "'file:///usr/share/backgrounds/balboa/wallpaper.png'" ]]
     [[ "$(runuser -u gdm -- env DCONF_PROFILE=gdm gsettings get org.gnome.login-screen logo)" == "'/usr/share/backgrounds/balboa/login.png'" ]]
     runuser -u balboasmoke -- test -r /etc/firefox/policies/policies.json
-    rpm -ql gnome-software | grep '/libgs_plugin_packagekit.so$' > /dev/null
+    systemctl is-enabled --quiet dnf-automatic.timer
+    dnf config-manager --help >/dev/null
+    for package in gnome-software PackageKit flatpak; do
+        if rpm -q --quiet "$package"; then
+            printf 'The desktop contains excluded package %s.\n' "$package" >&2
+            exit 1
+        fi
+    done
     runuser -u balboasmoke -- python3 /workspace/tests/firefox_checks.py
 fi
 printf 'The minimal post-installation script passed for %s.\n' "$flavor"

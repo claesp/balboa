@@ -162,6 +162,10 @@ def render_text(flavor, site, disk, kind, lab=False, passphrase=None, disk_gb=No
         for name, data in branding.plymouth_assets().items():
             files += file_fragment("/usr/share/plymouth/themes/balboa/" + name, data, mode="0644")
     if definition["desktop"]:
+        files += file_fragment("/etc/dnf/automatic.conf", (ROOT / "guest/dnf-automatic.conf").read_bytes(), mode="0644")
+        files += "install -d -m 0755 /etc/systemd/system/dnf-automatic.service.d\n"
+        files += file_fragment("/etc/systemd/system/dnf-automatic.service.d/60-balboa-guard.conf",
+                               (ROOT / "guest/dnf-automatic-guard.conf").read_bytes(), mode="0644")
         files += "install -d -m 0755 /etc/firefox /etc/firefox/policies\n"
         files += file_fragment("/etc/firefox/policies/policies.json",
                                (ROOT / "guest/firefox-policies.json").read_text(), mode="0644")

@@ -78,7 +78,8 @@ Record the package identity in `data/keyboards.json` after the update.
 
 Apply package updates through the approved site maintenance process.
 Do not rely on the installer ISO for later security updates.
-The default image does not define a site update schedule.
+The laptop and workstation use the [desktop security update schedule](updates.md).
+Use the site maintenance schedule on the server.
 
 After an update, retain the previous assessment evidence.
 Do another assessment through the procedure in [Security policy](security.md).

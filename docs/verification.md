@@ -456,3 +456,20 @@ The generated images reside in `build/wordmark-x1/branding/`.
 An offline QEMU overlay of the laptop test disk shows the new prompt, rotating ring, and login banner.
 The disk prompt masks typed characters, and Esc switches to the text view.
 The visual records reside in `build/wordmark-review/vm/`.
+
+## Desktop security updates
+
+The November 9 desktop selections replace GNOME Software and PackageKit with DNF Automatic and the DNF configuration plugin.
+The offline dependency tests resolve 604 laptop packages, 566 workstation packages, and 272 server packages.
+Both desktop selections omit GNOME Software, PackageKit, and Flatpak.
+All 60 local tests and the laptop post-installation script test pass.
+
+The QEMU migration retains GNOME, Firefox, and `fwupd` on the laptop.
+The DNF configuration plugin disables EPEL and enables it again in that test.
+The automatic service skips a run before the first assessment and while the DVD restriction is active.
+
+The final test uses signed Rocky RPMs and Rocky advisory data on local media.
+The service installs `libxslt-1.1.39-8.el10_2.1` for advisory `RLSA-2026:28584`.
+The ordinary `libinput` update remains available for manual installation.
+The test retains enforcing SELinux and records the transaction in the journal.
+The test records reside in `build/desktop-updates-review/`.

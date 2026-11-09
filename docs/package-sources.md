@@ -42,10 +42,10 @@ The native assessment compares every installed package version and architecture 
 The pinned key assessment covers imported signing keys separately.
 Any package outside that inventory stops initial hardening and requires review.
 
-Desktop hardening temporarily masks PackageKit so that background updates cannot change packages during AIDE initialization.
-The service restores the normal repository configuration before it creates the AIDE database.
+The desktop update service waits for initial hardening and the first assessment to finish.
+The hardening service restores the normal repository configuration before it creates the AIDE database.
 It assesses the package inventory again before it marks initial hardening complete.
-It then removes the temporary PackageKit mask and restarts the system.
+It then restarts the system for the assessment.
 
 If initial hardening fails, the failure handler restores the repository restriction.
 Examine the retained evidence before corrections.
@@ -54,7 +54,7 @@ Do not create the `remediated` marker to bypass this restriction.
 ## Later updates
 
 Successful initial hardening restores the normal official Rocky repositories.
-GNOME Software and DNF can then apply approved updates.
+DNF and DNF Automatic can then apply updates under the [desktop update policy](updates.md).
 These updates can contain versions that did not exist on the installation DVD.
 
 ## Laptop package and firmware sources
@@ -77,8 +77,7 @@ Firmware updates require a separate operator action and the site firmware review
 See the [fwupd command guide](https://github.com/fwupd/fwupd/blob/main/src/fwupdmgr.md) for remote status and metadata refresh.
 
 The laptop uses RPM sources for desktop applications.
-Rocky GNOME Software requires the Flatpak RPM, so the DVD supplies that dependency.
-Flatpak starts with an empty list of remotes.
+The package selection excludes GNOME Software, PackageKit, and Flatpak.
 
 To update an existing Balboa laptop, open a terminal in a copy of this repository on that laptop.
 After initial hardening completes, operate the command with administrator privileges.
@@ -95,7 +94,6 @@ Use the following commands on the laptop to see the sources.
 ```sh
 dnf repolist --enabled
 fwupdmgr get-remotes
-flatpak remotes
 ```
 
 ## Assessment after updates

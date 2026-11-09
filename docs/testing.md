@@ -62,8 +62,9 @@ The container does not assess kernel or storage controls.
 For desktop flavors, the test reads wallpaper and login image values through GNOME.
 The test also requires the login image to remain readable by GDM.
 
-Desktop tests require the GNOME Software plugin for PackageKit.
-They also start Firefox with a temporary profile inside the test container.
+Desktop tests require the DNF Automatic timer and the DNF configuration plugin.
+They also make sure that GNOME Software, PackageKit, and Flatpak are absent.
+They start Firefox with a temporary profile inside the test container.
 The browser assessment reads the deployed policy and requires locked privacy preferences with active malware and phishing protection.
 See [Firefox browser](browser.md) for the policy controls and test connection.
 

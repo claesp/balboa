@@ -6,8 +6,8 @@
     "gnome-session",
     "gnome-settings-daemon",
     "gnome-control-center",
-    "gnome-software",
-    "PackageKit",
+    "dnf-automatic",
+    "dnf-plugins-core",
     "fwupd",
     "firefox",
     "pipewire-pulseaudio",
@@ -34,6 +34,9 @@
     "tuned-ppd"
   ],
   "exclude": [
+    "gnome-software",
+    "PackageKit",
+    "flatpak",
     "openssh-server",
     "cups",
     "avahi",

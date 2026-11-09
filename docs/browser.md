@@ -1,7 +1,7 @@
 # Firefox browser
 
 The workstation and laptop install the official Rocky Linux Firefox package.
-The package receives security updates through Rocky repositories and GNOME Software or DNF.
+The package receives updates through the Rocky repositories and DNF.
 The project applies locked privacy policies to every Firefox profile.
 
 Telemetry is usage and diagnostic data.
@@ -34,7 +34,8 @@ Make sure that the Active page contains the project policies.
 Make sure that the Errors page contains no policy errors.
 
 Open `about:preferences#privacy` to examine the enforced privacy configuration.
-Use GNOME Software or DNF for Firefox package updates.
+Use DNF for Firefox package updates.
+See [Desktop package updates](updates.md) for security advisories and automatic updates.
 Repeat the security assessment after approved system changes through [Maintenance](maintenance.md).
 
 ## Tests and references

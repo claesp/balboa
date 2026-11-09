@@ -35,8 +35,8 @@ The workstation adds explicit packages for a minimal GNOME session.
 It includes GDM, the desktop shell, the session manager, and the control center.
 It also includes a terminal and key storage support.
 It explicitly includes `pipewire-pulseaudio` and `alsa-ucm` for desktop audio.
-GNOME Software supplies a graphical interface for applications and system updates.
-PackageKit supplies its package management service.
+DNF Automatic installs security updates after the first assessment.
+The DNF configuration plugin controls package repositories.
 The default image omits the optional Nautilus file manager.
 
 The workstation includes Intel and AMD graphics firmware.
@@ -51,7 +51,7 @@ It does not include office applications or printing services by default.
 ## Laptop
 
 The laptop adds the same minimal GNOME session.
-It includes GNOME Software and PackageKit for graphical updates.
+It uses the same DNF update and repository tools as the workstation.
 It enables stable LVFS for firmware and the approved RPM sources after hardening.
 See [Laptop package and firmware sources](package-sources.md#laptop-package-and-firmware-sources) for the source list and update procedure.
 It also adds wireless networking, Bluetooth, device firmware, and power management.
@@ -79,8 +79,8 @@ The laptop retains wireless firmware, Bluetooth dependencies, and power manageme
 The desktop keeps the control center, terminal, and secure credential storage.
 Required GNOME libraries remain even when the corresponding optional service is absent.
 
-The workstation and laptop also include the requested GNOME Software and PackageKit packages.
-These packages supply graphical updates without selection of the complete workstation environment.
+The workstation and laptop use the DVD packages `dnf-automatic` and `dnf-plugins-core`.
+They exclude GNOME Software, PackageKit, and Flatpak.
 The server retains command-line package management through DNF.
 
 The selected security policy still requires OpenSCAP, AIDE, audit, cryptsetup, and the logging packages.
@@ -93,15 +93,9 @@ Use `--no-boot-splash` to omit Plymouth on a minimal server.
 
 ## Desktop updates
 
-On an installed workstation or laptop, open Software from the application overview.
-Select Updates to examine available updates.
-Apply the updates through the approved site maintenance process.
-If Software requests a restart, save your work before the restart.
-
-Some system updates install during a restart.
-The images retain their configured package exclusions and disable weak dependencies.
-Existing installation ISOs retain their original package selection.
-Render a new Kickstart and rebuild its ISO to include the graphical update tools.
+Use [Desktop package updates](updates.md) to manage automatic updates and package repositories.
+The security update timer starts after initial hardening and the first assessment.
+The operator controls restarts.
 
 The workstation and laptop include official Rocky Firefox with locked privacy policies.
 See [Firefox browser](browser.md) for the disabled features and policy location.
