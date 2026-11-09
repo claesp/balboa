@@ -2,7 +2,7 @@
 
 The render command creates three PNG images.
 PNG is a format for image files.
-The boot image and wallpaper use a fixed Unsplash mountain photo.
+The boot image and wallpaper use a fixed Unsplash photo from Abisko National Park in Sweden.
 All three images show the configured name in large, light Inter Bold text.
 
 The render host requires ImageMagick with SVG support, Fontconfig, and `grub2-mkfont` or `grub-mkfont`.
@@ -52,6 +52,7 @@ The workstation and laptop install all three images.
 The login banner has a transparent background.
 GDM shows the name over its own background in the logo area.
 The name sits near the lower right of the wallpaper.
+The boot image and wallpaper show the photo credit in the lower left corner.
 
 If graphical boot is enabled, the render also writes `branding/plymouth/spinner.png` and `branding/plymouth/entry.png`.
 Plymouth uses these images for the rotating ring and the disk password field.
@@ -75,6 +76,7 @@ A system without graphics cannot show an image.
 
 The GNOME images reside in `/usr/share/backgrounds/balboa/`.
 The default wallpaper applies to light and dark modes.
+GNOME fits the full wallpaper to the screen to keep the credit visible.
 Users can change their wallpaper after login.
 
 The GDM login screen uses its supported logo configuration.
@@ -87,18 +89,18 @@ The LUKS passphrase accepts 5 to 128 printable characters.
 
 ## Source assets and fonts
 
-The photo shows Giau Pass at sunset.
-The [Unsplash source page](https://unsplash.com/photos/aerial-view-of-mountains-during-sunset-8Nql6oVT_1A) identifies the selected photo.
-The image uses the [Unsplash License](https://unsplash.com/license).
+The photo by David Becker shows the northern lights over a lake.
+The source is 3840 × 2544 pixels. [Unsplash source page](https://unsplash.com/photos/aurora-borealis-over-body-of-water-during-nighttime-58X3XfxxevU)
+The image uses the Unsplash License. [License terms](https://unsplash.com/license)
 
-The source photo resides in `assets/photos/giau-pass.jpg`.
+The source photo resides in `assets/photos/abisko-aurora.jpg`.
 The official Inter 4.1 fonts reside in `assets/fonts/Inter-Regular.ttf` and `assets/fonts/Inter-Bold.ttf`.
-The renderer uses the bold font for the name in the images.
+The renderer uses Inter Bold for the name and Inter Regular for the photo credit.
 The repository retains its license in `assets/fonts/OFL.txt`.
 
 The source record is `assets/sources.json`.
 The renderer requires matching source digests before image generation.
-It crops each photo to fill its target dimensions and applies a dark overlay for text contrast.
+The renderer crops the photo to fill each image and applies a dark overlay for text contrast.
 
 The renderer uses a private font configuration for both Inter weights.
 It does not require a system-wide Inter installation on the build host.

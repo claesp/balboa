@@ -10,7 +10,9 @@ if [[ "$DESKTOP" == yes ]]; then
 [org/gnome/desktop/background]
 picture-uri='file:///usr/share/backgrounds/balboa/wallpaper.png'
 picture-uri-dark='file:///usr/share/backgrounds/balboa/wallpaper.png'
-picture-options='zoom'
+picture-options='scaled'
+color-shading-type='solid'
+primary-color='#07121f'
 [org/gnome/desktop/interface]
 font-name='Inter 11'
 document-font-name='Inter 11'

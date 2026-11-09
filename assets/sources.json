@@ -1,10 +1,11 @@
 {
   "photo": {
-    "file": "photos/giau-pass.jpg",
-    "source": "https://unsplash.com/photos/aerial-view-of-mountains-during-sunset-8Nql6oVT_1A",
-    "download": "https://images.unsplash.com/photo-1508182390781-8dd476c3237c?fm=jpg&fit=max&w=3840&q=90",
+    "file": "photos/abisko-aurora.jpg",
+    "source": "https://unsplash.com/photos/aurora-borealis-over-body-of-water-during-nighttime-58X3XfxxevU",
+    "download": "https://images.unsplash.com/photo-1526644253653-a411eaafdfe6?fm=jpg&fit=max&w=3840&q=90",
     "license": "https://unsplash.com/license",
-    "sha256": "980ce0472ca1421eeef8f0e08c29f147391f854f1ee2bf8e68748d6890830072"
+    "credit": "Photo by David Becker on Unsplash",
+    "sha256": "d1e8d501a99bd74e59fe9955836f9ae6c7c57ebc76aac91ebc52596d548e3a82"
   },
   "font": {
     "file": "fonts/Inter-Regular.ttf",

@@ -5,8 +5,9 @@ Plymouth is a program that shows graphics during startup.
 The normal lab mode retains a text boot for automatic serial unlock.
 
 GRUB shows the generated photo before Linux starts.
-Plymouth then reuses the same image.
-A rotating ring shows activity beneath the configured name.
+Plymouth fits the full image to the screen so that the photo credit stays visible.
+A rotating ring shows activity at the center of the screen.
+The configured name sits above the ring.
 The ring and the name use the same light color.
 
 The encrypted disk prompt uses a dark entry field with light masked characters.

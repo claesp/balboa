@@ -262,13 +262,22 @@ class PipelineTests(unittest.TestCase):
             with self.subTest(value=value), self.assertRaises(ValueError):
                 valid_site({**self.site, "branding_text": value})
         label = '<logo> & "example"'
+        credit = branding.sources()["photo"]["credit"]
         for name in branding.SIZES:
             with self.subTest(name=name):
-                root = ET.fromstring(branding.vector(label, name))
-                text, = root
+                root = ET.fromstring(branding.vector(label, name, credit))
+                text = root[0]
                 self.assertTrue(text.tag.endswith("}text"))
                 self.assertEqual(text.text, label)
                 self.assertEqual(text.get("font-weight"), "700")
+                if name == "login.png":
+                    self.assertEqual(len(root), 1)
+                else:
+                    self.assertEqual(len(root), 2)
+                    self.assertEqual(root[1].text, credit)
+                    self.assertEqual(root[1].get("text-anchor"), "start")
+                    self.assertEqual(root[1].get("x"), "48")
+                    self.assertEqual(root[1].get("y"), "1024")
 
     def test_spinner_arc_stays_visible_over_the_track(self):
         from balboa import branding

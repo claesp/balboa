@@ -12,7 +12,7 @@ import struct
 import subprocess
 
 ROOT = Path(__file__).resolve().parent.parent
-PHOTO = ROOT / "assets/photos/giau-pass.jpg"
+PHOTO = ROOT / "assets/photos/abisko-aurora.jpg"
 FONT = ROOT / "assets/fonts/Inter-Regular.ttf"
 BOLD_FONT = FONT.with_name("Inter-Bold.ttf")
 FOREGROUND = "#f1fafb"
@@ -26,13 +26,13 @@ def validate_text(text):
         raise ValueError("The branding text requires 1 to 64 printable characters without line breaks.")
 
 
-def label(text, x, y, size, width, anchor="middle"):
+def label(text, x, y, size, width, anchor="middle", weight=700):
     size = min(size, width / (len(text) * 1.05))
     return (f'<text x="{x}" y="{y}" text-anchor="{anchor}" font-family="Inter" '
-            f'font-weight="700" font-size="{size}" fill="{FOREGROUND}">{escape(text)}</text>')
+            f'font-weight="{weight}" font-size="{size}" fill="{FOREGROUND}">{escape(text)}</text>')
 
 
-def vector(text, name):
+def vector(text, name, photo_credit):
     validate_text(text)
     width, height = SIZES[name]
     if name == "login.png":
@@ -40,9 +40,10 @@ def vector(text, name):
         view = "0 0 640 180"
     else:
         if name == "boot.png":
-            content = label(text, 960, 500, 120, 1440)
+            content = label(text, 960, 440, 120, 1440)
         else:
             content = label(text, 1780, 950, 92, 1380, anchor="end")
+        content += label(photo_credit, 48, 1024, 28, 1080, anchor="start", weight=400)
         view = "0 0 1920 1080"
     return f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="{view}">{content}</svg>'
 
@@ -108,7 +109,7 @@ def plymouth_assets():
 def images(text):
     validate_text(text)
     tool = image_tool()
-    sources()
+    photo_credit = sources()["photo"]["credit"]
     result = {}
     with tempfile.TemporaryDirectory(prefix="balboa-fontconfig-") as directory:
         configuration = Path(directory) / "fonts.conf"
@@ -131,7 +132,7 @@ def images(text):
                     "-gravity", "center", "-extent", f"{width}x{height}",
                     "-fill", "#07121f" + shade, "-draw", f"rectangle 0,0 {width},{height}",
                     "(", "-background", "none", "svg:-", ")", "-compose", "over", "-composite"]
-            result[name] = png(command, vector(text, name), dimensions, environment)
+            result[name] = png(command, vector(text, name, photo_credit), dimensions, environment)
     return result
 
 

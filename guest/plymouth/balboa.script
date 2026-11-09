@@ -60,7 +60,7 @@ fun layout()
     global.width = Window.GetWidth();
     global.height = Window.GetHeight();
     local.scale = width / background_image.GetWidth();
-    if (height / background_image.GetHeight() > local.scale)
+    if (height / background_image.GetHeight() < local.scale)
         local.scale = height / background_image.GetHeight();
     local.image = background_image.Scale(background_image.GetWidth() * local.scale,
                                           background_image.GetHeight() * local.scale);
@@ -89,7 +89,7 @@ fun refresh()
     local.image = spinner_base.Rotate(6.283185 * frame / 60);
     spinner.SetImage(local.image);
     spinner.SetPosition(Window.GetX() + (width - local.image.GetWidth()) / 2,
-                        Window.GetY() + height * 0.60 - local.image.GetHeight() / 2, 20);
+                        Window.GetY() + (height - local.image.GetHeight()) / 2, 20);
 }
 
 fun display_message(text)
