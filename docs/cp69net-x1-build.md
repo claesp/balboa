@@ -1,5 +1,30 @@
 # CP69net X1 Carbon Gen 13 test images
 
+## November 9 UEFI USB build
+
+This build uses revision `4d5e8e5`, the private `cp69net.json` file, and `--usb-uefi`.
+The ISO is `build/balboa-cp69net-laptop-x1-carbon-gen13-20261109-usb.iso`.
+Its size is 10234363904 bytes, or approximately 9.53 GiB.
+
+The build includes English and Swedish locales, the GNOME defaults, and hostnames from firmware serial numbers.
+The offline package test resolves 633 packages from the locked Rocky Linux 10.2 DVD.
+See [Desktop Settings](desktop-settings.md) and [Hostname](site.md#hostname) for the installed behavior.
+
+Use a USB device with at least 16 GB of capacity.
+The installer erases the entire `nvme0n1` disk and creates the fixed 128 GB layout.
+Keep the ISO private because it contains the configured LUKS passphrase.
+
+The embedded media checksum reports `PASS`.
+The SHA-256 digest is the value that follows.
+
+```text
+8247a505cc62acda9b31f29b0c45d87622af46b618c1f87d6d646a4cfa615a7f
+```
+
+QEMU starts Anaconda from a read-only UEFI USB device and reads the embedded Kickstart.
+The test stops at the disk check because the VM has no NVMe installation disk.
+The build host retains only this ISO and removes the temporary files from the build and boot test.
+
 ## November 9 Abisko build
 
 This build uses revision `dde9e90` and the private `cp69net.json` site file.
