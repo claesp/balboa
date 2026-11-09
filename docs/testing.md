@@ -5,6 +5,15 @@ QEMU tests the installer, kernel, storage, and installed services.
 A container does not supply evidence of full system conformance.
 For an ISO installation in a QEMU window, use [Interactive QEMU tests](qemu.md).
 
+## Cleanup after every test
+
+Clean up on the build host after each test session, even if a test fails.
+Save the reports, logs, and screenshots that you need before cleanup.
+Stop the virtual machines, containers, and log collectors for the test.
+Preview the files to remove before you apply cleanup.
+Remove disposable ISOs, virtual disks, credentials, and temporary files from the test.
+Keep the current installer and any virtual machines that you still use. [Clean selected outputs](clean.md#selected-outputs)
+
 ## Local tests
 
 Operate this command on the Linux build host.
@@ -150,8 +159,9 @@ After the VM tests, stop the owned collector with this command:
 python3 -m balboa lab-logger --directory build/lab-logging --stop
 ```
 
-The command retains the journal files and disposable keys for examination.
-Before a later test session, use a new directory for fresh certificates.
+The command retains the journal files and disposable keys until cleanup.
+Save the journal files that you need for the test record.
+Remove the disposable keys during cleanup.
 
 Before release, examine the HTML report and each manual control.
 Do not release an image because the remediation service completed.
