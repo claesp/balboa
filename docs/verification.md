@@ -424,3 +424,21 @@ The later production laptop build uses the private site input and the fixed 128 
 The rootless UEFI USB builder updates the appended firmware partition without host administrator privileges.
 Its configuration and signed program comparisons pass, and QEMU shows the USB installation menu.
 See [CP69net X1 test image](cp69net-x1-build.md) for the artifact digest, build procedure, and installation behavior.
+
+## Laptop package and firmware sources
+
+The November 9 laptop test prepares the requested Rocky repositories, stable EPEL, and stable LVFS.
+The EPEL release package signature matches the Rocky signing key.
+The EPEL certificate fingerprint matches the Fedora publication.
+The online metadata tests accept all requested Rocky RPM sources and the stable EPEL 10.2 catalog.
+
+The QEMU test uses a disposable overlay of the previous laptop installation.
+The test rejects the migration while the DVD repository restriction is active.
+The staged RPM repositories become visible after the test releases that restriction.
+The migration accepts the earlier policy format and gives the same result when operated again.
+
+The later native assessment accepts the approved EPEL key.
+The DVD-only native assessment rejects that key.
+The firmware source list reports stable LVFS as enabled and LVFS testing as disabled.
+The desktop account has an empty list of Flatpak remotes.
+See [Laptop package and firmware sources](package-sources.md#laptop-package-and-firmware-sources) for the procedure.

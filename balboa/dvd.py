@@ -19,9 +19,10 @@ def catalog():
     return record
 
 
-def source_policy():
+def source_policy(flavor=None):
+    later_updates = "official-rocky-and-epel-repositories" if flavor == "laptop" else "official-rocky-repositories"
     return {"installation": "locked-dvd-only", "initial_hardening": "installed-dvd-packages-only",
-            "later_updates": "official-rocky-repositories", "dvd_sha256": catalog()["dvd_sha256"],
+            "later_updates": later_updates, "dvd_sha256": catalog()["dvd_sha256"],
             "catalog_sha256": hashlib.sha256(CATALOG.read_bytes()).hexdigest()}
 
 

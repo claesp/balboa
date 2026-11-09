@@ -37,6 +37,9 @@ if [[ "$FLAVOR" == server ]]; then
     firewall-cmd --permanent --zone=drop --add-service=ssh
     systemctl enable sshd.service
 fi
+if [[ "$FLAVOR" == laptop ]]; then
+    python3 /usr/local/libexec/balboa/laptop_repos.py --stage
+fi
 systemctl disable balboa-harden.service
 python3 /usr/local/libexec/balboa/package_source.py release
 grep -qxF '!/var/lib/balboa' /etc/aide.conf || printf '\n!/var/lib/balboa\n' >> /etc/aide.conf

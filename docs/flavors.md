@@ -52,6 +52,8 @@ It does not include office applications or printing services by default.
 
 The laptop adds the same minimal GNOME session.
 It includes GNOME Software and PackageKit for graphical updates.
+It enables stable LVFS for firmware and the approved RPM sources after hardening.
+See [Laptop package and firmware sources](package-sources.md#laptop-package-and-firmware-sources) for the source list and update procedure.
 It also adds wireless networking, Bluetooth, device firmware, and power management.
 The image includes `tuned-ppd` for GNOME power controls.
 Explicit firmware packages support common Intel, Atheros, Broadcom, and Realtek wireless devices.

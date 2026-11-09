@@ -68,10 +68,12 @@ The DVD contains `bolt`, but the default minimal image does not add a dock autho
 Keep firmware DMA protection active.
 Do tests of the selected dock and external displays.
 
-The DVD also contains `fwupd`, `fprintd`, `libfprint`, `iio-sensor-proxy`, and `libcamera`.
+The DVD also contains `fprintd`, `libfprint`, `iio-sensor-proxy`, and `libcamera`.
 These optional packages are not automatic additions to the image.
 Fingerprint authentication requires a supported sensor and a review of the authentication policy.
 Firmware payloads outside the DVD require the site firmware review process.
+The laptop uses `fwupd` with the stable LVFS remote for firmware discovery.
+See [Laptop package and firmware sources](package-sources.md#laptop-package-and-firmware-sources) for the remote configuration.
 
 Optional cellular modems, presence detection, and privacy screen behavior require separate hardware tests.
 Lenovo notes Linux feature limits in its [product specifications](https://psref.lenovo.com/syspool/Sys/PDF/ThinkPad/ThinkPad_X1_Carbon_Gen_13/ThinkPad_X1_Carbon_Gen_13_Spec.pdf).

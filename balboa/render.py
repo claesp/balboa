@@ -137,6 +137,10 @@ def render_text(flavor, site, disk, kind, lab=False, passphrase=None, disk_gb=No
     files = ""
     for name in ("baseline.sh", "branding.sh", "plymouth.sh", "harden.sh", "audit.sh", "failure.sh", "export.sh", "result_gate.py", "native_checks.py", "package_source.py"):
         files += file_fragment("/usr/local/libexec/balboa/" + name, (ROOT / "guest" / name).read_text(), True)
+    if flavor == "laptop":
+        for name in ("laptop_repos.py", "epel.repo", "RPM-GPG-KEY-EPEL-10"):
+            files += file_fragment("/usr/local/libexec/balboa/" + name, (ROOT / "guest" / name).read_bytes(),
+                                   executable=name.endswith(".py"))
     assets = branding.images(site.get("branding_text", "Balboa"))
     files += f"install -d -m 0755 {branding.BOOT_DIR}\n"
     files += file_fragment(branding.BOOT_DIR + "/boot.png", assets["boot.png"], mode="0644")
@@ -297,7 +301,7 @@ def render(args):
                 "boot_splash": site["boot_splash"],
                 "policy_deviations": EXCLUSIONS,
                 "disk": disk, "source_kind": args.kind,
-                "package_source_policy": source_policy(),
+                "package_source_policy": source_policy(args.flavor),
                 "storage": layout(args.disk_size_gb, args.lab),
                 "kickstart_sha256": hashlib.sha256(text.encode()).hexdigest()}
     path.with_suffix(".json").write_text(json.dumps(metadata, indent=2) + "\n")

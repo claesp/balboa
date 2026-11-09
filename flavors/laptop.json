@@ -8,6 +8,7 @@
     "gnome-control-center",
     "gnome-software",
     "PackageKit",
+    "fwupd",
     "firefox",
     "pipewire-pulseaudio",
     "alsa-ucm",

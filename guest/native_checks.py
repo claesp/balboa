@@ -36,15 +36,16 @@ def main():
     parser.add_argument("--dvd-only", action="store_true")
     args = parser.parse_args()
     policy = json.loads(Path("/etc/balboa/native-policy.json").read_text())
+    dvd_policy = {**policy, "key_fingerprints": policy.get("dvd_key_fingerprints", policy["key_fingerprints"])}
     key = Path("/etc/pki/rpm-gpg/RPM-GPG-KEY-Rocky-10")
     file_keys = fingerprints(key.read_text())
-    validate_fingerprints(file_keys, policy)
+    validate_fingerprints(file_keys, dvd_policy)
     if args.install_keys:
         subprocess.run(["rpm", "--import", str(key)], check=True, capture_output=True, text=True)
     text = subprocess.run(["rpm", "-q", "--qf", "%{DESCRIPTION}\n", "gpg-pubkey"],
                           check=True, capture_output=True, text=True).stdout
     rpm_keys = fingerprints(text)
-    validate_fingerprints(rpm_keys, policy)
+    validate_fingerprints(rpm_keys, dvd_policy if args.dvd_only else policy)
     names = set(subprocess.run(["rpm", "-qa", "--qf", "%{NAME}\n"], check=True,
                                capture_output=True, text=True).stdout.splitlines())
     forbidden = names.intersection(policy["excluded_packages"])

@@ -1,7 +1,7 @@
 # Package sources
 
 Installation and initial hardening use only the locked Rocky Linux DVD package versions.
-Later approved updates use the official Rocky repositories.
+Later approved updates use the configured Rocky repositories and the laptop EPEL repository.
 This policy applies to packages installed in the target system.
 The build tools use the separate pinned Rocky container.
 
@@ -56,6 +56,49 @@ Do not create the `remediated` marker to bypass this restriction.
 Successful initial hardening restores the normal official Rocky repositories.
 GNOME Software and DNF can then apply approved updates.
 These updates can contain versions that did not exist on the installation DVD.
+
+## Laptop package and firmware sources
+
+The laptop prepares CRB, Realtime, Extras, Plus, Security, and EPEL before it releases the DVD restriction.
+BaseOS and AppStream supply the standard packages and updates.
+EPEL means Extra Packages for Enterprise Linux.
+The laptop uses the stable Fedora EPEL 10 repository with RPM signature checks.
+The signing-key assessment permits the approved EPEL key only in the later package policy.
+
+The approved EPEL certificate has fingerprint `7D8D15CBFC4E62688591FB2633D98517E37ED158`.
+The certificate and stable repository configuration come from `epel-release-10-7.el10_1.noarch` in Rocky Extras.
+The project prepares those files directly and keeps the package installation on the DVD.
+The [Fedora signing-key list](https://fedoraproject.org/security/#current-openpgp-certificates) identifies the EPEL 10 key.
+The [Rocky repository guide](https://docs.rockylinux.org/teams/rel_eng/repo/) describes the additional Rocky sources.
+
+The stable Linux Vendor Firmware Service (LVFS) remote supplies firmware metadata through `fwupd`.
+The image enables that remote for the laptop.
+Firmware updates require a separate operator action and the site firmware review.
+See the [fwupd command guide](https://github.com/fwupd/fwupd/blob/main/src/fwupdmgr.md) for remote status and metadata refresh.
+
+The laptop uses RPM sources for desktop applications.
+Rocky GNOME Software requires the Flatpak RPM, so the DVD supplies that dependency.
+Flatpak starts with an empty list of remotes.
+
+To update an existing Balboa laptop, open a terminal in a copy of this repository on that laptop.
+After initial hardening completes, operate the command with administrator privileges.
+
+```sh
+sudo python3 guest/laptop_repos.py
+```
+
+The command updates the local repository configuration and approved signing-key list.
+It accepts the policy file format from earlier Balboa laptop images.
+It installs the EPEL public key file for DNF to use when it verifies EPEL packages.
+Use the following commands on the laptop to see the sources.
+
+```sh
+dnf repolist --enabled
+fwupdmgr get-remotes
+flatpak remotes
+```
+
+## Assessment after updates
 
 Later assessments retain the package exclusions and signing-key tests.
 They do not require updated packages to match the original DVD versions.

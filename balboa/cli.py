@@ -134,8 +134,8 @@ def iso(args):
     ks = args.kickstart.resolve()
     metadata = json.loads(ks.with_suffix(".json").read_text())
     from .dvd import source_policy
-    if metadata.get("package_source_policy") != source_policy():
-        raise ValueError("The Kickstart predates the DVD source policy. Render it again before ISO creation.")
+    if metadata.get("package_source_policy") != source_policy(metadata.get("flavor")):
+        raise ValueError("The Kickstart package source policy is out of date. Render it again before ISO creation.")
     if sha256(ks) != metadata["kickstart_sha256"] or metadata["source_kind"] != args.kind:
         raise ValueError("The Kickstart manifest does not match the image request.")
     output = args.output.resolve()
