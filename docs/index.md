@@ -42,12 +42,13 @@ Balboa retains signature files in `cache/`.
 [Boot process](boot.md) describes the spinner, graphical disk prompt, and startup choices.
 [Boot and desktop images](branding.md) describes the generated logo, text, and images.
 [Minimal flavors](flavors.md) describes package selection and hardware services.
+[Desktop Settings](desktop-settings.md) describes the GNOME defaults and file selection.
 [Firefox browser](browser.md) describes browser privacy policies and package updates.
 [Desktop package updates](updates.md) describes automatic security updates and repository control.
 [Package sources](package-sources.md) defines DVD restrictions and the review procedure for missing packages.
 [Lenovo X1 Carbon Gen 13](lenovo-x1.md) records hardware compatibility findings and physical acceptance requirements.
 [Fixed storage](storage.md) describes disk sizes, LVM, and mount restrictions.
-[Site configuration](site.md) describes recovery credentials and central logging.
+[Site configuration](site.md) describes hostnames, locale support, recovery credentials, and central logging.
 
 ## Source references
 

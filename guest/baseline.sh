@@ -23,6 +23,7 @@ if (( $(id -u "$ADMIN_USER") < 1000 )); then
 fi
 install -d -m 0700 /var/lib/balboa/evidence
 python3 /usr/local/libexec/balboa/package_source.py guard
+python3 /usr/local/libexec/balboa/set_hostname.py "$FLAVOR"
 install -d /etc/ssh/sshd_config.d /etc/sysctl.d /etc/security/pwquality.conf.d /etc/audit/rules.d
 cat > /etc/ssh/sshd_config.d/00-balboa.conf <<'EOF'
 PermitRootLogin no
@@ -127,6 +128,7 @@ if [[ -f /etc/systemd/journal-upload.conf.d/60-balboa.conf ]]; then
 fi
 if [[ "$DESKTOP" == yes ]]; then
     systemctl enable dnf-automatic.timer
+    systemctl --global mask tracker-miner-fs-3.service
     restorecon -RF /etc/firefox
     install -d /etc/dconf/profile /etc/dconf/db/local.d /etc/dconf/db/local.d/locks
     cat > /etc/dconf/db/local.d/00-balboa <<'EOF'
@@ -137,13 +139,24 @@ lock-enabled=true
 lock-delay=uint32 0
 [org/gnome/login-screen]
 disable-user-list=true
+[org/gnome/desktop/notifications]
+show-in-lock-screen=false
+[org/gnome/desktop/search-providers]
+disable-external=true
+[org/gnome/desktop/privacy]
+remove-old-temp-files=true
+EOF
+    cat > /etc/goa.conf <<'EOF'
+[providers]
+enable=none
 EOF
     printf 'user-db:user\nsystem-db:local\n' > /etc/dconf/profile/user
     printf 'user-db:user\nsystem-db:local\n' > /etc/dconf/profile/gdm
     printf '/org/gnome/desktop/session/idle-delay\n/org/gnome/desktop/screensaver/lock-enabled\n/org/gnome/desktop/screensaver/lock-delay\n' > /etc/dconf/db/local.d/locks/00-balboa
     dconf update
     chmod 0644 /etc/dconf/profile/user /etc/dconf/profile/gdm \
-        /etc/dconf/db/local.d/00-balboa /etc/dconf/db/local.d/locks/00-balboa /etc/dconf/db/local
+        /etc/dconf/db/local.d/00-balboa /etc/dconf/db/local.d/locks/00-balboa /etc/dconf/db/local /etc/goa.conf
+    restorecon /etc/goa.conf
 fi
 if [[ "$FLAVOR" == laptop ]]; then
     systemctl enable bluetooth.service tuned.service tuned-ppd.service

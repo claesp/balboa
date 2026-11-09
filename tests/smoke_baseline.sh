@@ -24,7 +24,7 @@ useradd --uid 1000 balboasmoke
 chage --lastday -1 balboasmoke
 install -d /etc/balboa /usr/local/libexec/balboa
 cp /workspace/guest/*.sh /usr/local/libexec/balboa/
-install -m 0755 /workspace/guest/package_source.py /usr/local/libexec/balboa/
+install -m 0755 /workspace/guest/{package_source,set_hostname}.py /usr/local/libexec/balboa/
 splash=$(python3 - "$ks" <<'PYTHON'
 import json, pathlib, sys
 print("yes" if json.loads(pathlib.Path(sys.argv[1]).with_suffix(".json").read_text())["boot_splash"] else "no")
@@ -78,6 +78,11 @@ if [[ "$splash" == yes ]]; then
     install -m 0644 "$(dirname "$ks")/branding/plymouth/"*.png /usr/share/plymouth/themes/balboa/
 fi
 bash /workspace/guest/baseline.sh
+prefix=pc
+if [[ "$flavor" == server ]]; then
+    prefix=srv
+fi
+grep -Eq "^${prefix}-[a-z0-9]([a-z0-9-]*[a-z0-9])?$" /etc/hostname
 if [[ "$splash" == yes ]]; then
     [[ "$(plymouth-set-default-theme)" == balboa ]]
     [[ "$(fc-match -f '%{family}' sans-serif)" == Inter ]]
@@ -95,6 +100,12 @@ if [[ "$desktop" == yes ]]; then
     runuser -u gdm -- test -r /usr/share/backgrounds/balboa/login.png
     [[ "$(runuser -u balboasmoke -- gsettings get org.gnome.desktop.background picture-uri)" == "'file:///usr/share/backgrounds/balboa/wallpaper.png'" ]]
     [[ "$(runuser -u gdm -- env DCONF_PROFILE=gdm gsettings get org.gnome.login-screen logo)" == "'/usr/share/backgrounds/balboa/login.png'" ]]
+    [[ "$(runuser -u balboasmoke -- gsettings get org.gnome.desktop.notifications show-in-lock-screen)" == false ]]
+    [[ "$(runuser -u balboasmoke -- gsettings get org.gnome.desktop.search-providers disable-external)" == true ]]
+    [[ "$(runuser -u balboasmoke -- gsettings get org.gnome.desktop.privacy remove-old-temp-files)" == true ]]
+    grep -Fxq 'enable=none' /etc/goa.conf
+    rpm -q --quiet nautilus tracker-miners
+    [[ "$(systemctl --global is-enabled tracker-miner-fs-3.service)" == masked ]]
     runuser -u balboasmoke -- test -r /etc/firefox/policies/policies.json
     systemctl is-enabled --quiet dnf-automatic.timer
     dnf config-manager --help >/dev/null

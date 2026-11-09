@@ -8,6 +8,7 @@ import subprocess
 import sys
 import unittest
 import xml.etree.ElementTree as ET
+from unittest.mock import patch
 
 from balboa.cli import checksum_entry
 from balboa.render import render_text, valid_site, read_site, render
@@ -16,6 +17,7 @@ from balboa.storage import layout
 from balboa.policy import EXCLUSIONS, tailoring
 from guest.result_gate import assess, NS
 from guest.native_checks import validate_fingerprints, validate_key_access
+from guest.set_hostname import machine_hostname
 
 PROFILE = "xccdf_org.ssgproject.content_profile_cis"
 
@@ -91,6 +93,32 @@ class PipelineTests(unittest.TestCase):
             with self.subTest(flavor=flavor):
                 text, _ = render_text(flavor, {**self.site, "keyboard": "se"}, "vda", "dvd")
                 self.assertIn("\nkeyboard --xlayouts=se\n", text)
+
+    def test_hostname_uses_a_usable_firmware_serial(self):
+        with patch("guest.set_hostname.subprocess.run") as decode:
+            decode.side_effect = [subprocess.CompletedProcess([], 0, " To Be Filled By O.E.M. \n"),
+                                  subprocess.CompletedProcess([], 0, " AB-12/34 \n")]
+            self.assertEqual(machine_hostname("laptop"), "pc-ab-12-34")
+            self.assertEqual([call.args[0][-1] for call in decode.call_args_list],
+                             ["system-serial-number", "chassis-serial-number"])
+            decode.side_effect = None
+            decode.return_value = subprocess.CompletedProcess([], 0, "A" * 80 + "\n")
+            self.assertEqual(machine_hostname("server"), "srv-" + "a" * 59)
+
+    def test_hostname_falls_back_to_nine_lowercase_letters(self):
+        with patch("guest.set_hostname.subprocess.run") as decode:
+            decode.return_value = subprocess.CompletedProcess([], 1, "")
+            for flavor, prefix in (("server", "srv"), ("workstation", "pc"), ("laptop", "pc")):
+                with self.subTest(flavor=flavor):
+                    self.assertRegex(machine_hostname(flavor), rf"^{prefix}-[a-z]{{9}}$")
+
+    def test_files_package_matches_the_desktop_selection(self):
+        for flavor in ("server", "workstation", "laptop"):
+            with self.subTest(flavor=flavor):
+                text, _ = render_text(flavor, self.site, "vda", "dvd")
+                self.assertIn("\ndmidecode\n", text)
+                self.assertEqual("\nnautilus\n" in text, flavor != "server")
+                self.assertEqual("\n-nautilus\n" in text, flavor == "server")
 
     def test_default_locale_packages_are_desktop_only(self):
         for flavor in ("server", "workstation", "laptop"):
@@ -271,7 +299,6 @@ class PipelineTests(unittest.TestCase):
         self.assertFalse(work.exists())
 
     def test_branding_rejects_changed_source_assets(self):
-        from unittest.mock import patch
         from balboa import branding
         corrupt = self.root / "unapproved-photo.jpg"
         corrupt.write_bytes(b"not the approved photo")

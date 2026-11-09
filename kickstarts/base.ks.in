@@ -35,6 +35,7 @@ aide
 authselect
 chrony
 cryptsetup
+dmidecode
 firewalld
 openscap-scanner
 scap-security-guide

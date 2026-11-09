@@ -6,6 +6,7 @@
     "gnome-session",
     "gnome-settings-daemon",
     "gnome-control-center",
+    "nautilus",
     "dnf-automatic",
     "dnf-plugins-core",
     "fwupd",
@@ -41,7 +42,6 @@
     "cups",
     "avahi",
     "postfix",
-    "nautilus",
     "qemu-guest-agent",
     "nvidia-gpu-firmware"
   ],

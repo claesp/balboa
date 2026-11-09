@@ -8,6 +8,22 @@ The required fields appear in `examples/site.json`.
 The build procedure describes their password and key formats.
 See [Build and installation](build.md) before you create production media.
 
+## Hostname
+
+The `hostname` field sets the network name during installation.
+After package installation, `dmidecode` reads the serial number from the machine firmware.
+The installer uses the system serial number first and tries the chassis serial number next.
+It skips placeholder values such as `Not Specified`.
+
+The installed name starts with `pc-` on a laptop or workstation and `srv-` on a server.
+The installer converts the serial to lowercase and replaces groups of other characters with hyphens.
+It limits the full name to 63 characters.
+If the firmware gives no usable serial number, the installer uses nine random lowercase letters.
+
+The installer writes the name to `/etc/hostname`.
+The installed system reads this name at each boot.
+For example, the serial `ABC-123` gives the laptop name `pc-abc-123`.
+
 ## Root console recovery
 
 The required `root_password_hash` field accepts a SHA512 crypt password digest.

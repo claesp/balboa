@@ -61,7 +61,8 @@ Put the root console password digest in `root_password_hash` in `site.json`.
 Both password fields can contain the same digest.
 Retain the root password in the approved recovery vault.
 Put the public key contents in `ssh_public_key` in `site.json`.
-Set the hostname and local language fields in `site.json`.
+Set the installation hostname and locale fields in `site.json`.
+See [Hostname](site.md#hostname) for the name that the installed system uses.
 Use an XKB layout identifier for `keyboard`, such as `se` for Swedish or `us` for US English.
 See [Keyboard and language](site.md#keyboard-and-language) for the supported names and locale fields.
 Use a separate administrator name that does not identify a system account.

@@ -37,7 +37,8 @@ It also includes a terminal and key storage support.
 It explicitly includes `pipewire-pulseaudio` and `alsa-ucm` for desktop audio.
 DNF Automatic installs security updates after the first assessment.
 The DNF configuration plugin controls package repositories.
-The default image omits the optional Nautilus file manager.
+The workstation includes Files (Nautilus) for file selection and search settings.
+See [Desktop Settings](desktop-settings.md) for the file indexer and desktop defaults.
 
 The workstation includes Intel and AMD graphics firmware.
 It does not select the full workstation environment group.
@@ -71,7 +72,7 @@ Physical hardware tests and approved policy decisions remain necessary.
 
 ## Package review
 
-The November 8 review removes Nautilus and the QEMU guest agent.
+The November 8 review removes the QEMU guest agent.
 It also excludes NVIDIA firmware from the default Intel and AMD graphics selection.
 The workstation excludes Intel wireless firmware because its role uses wired networking.
 

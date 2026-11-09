@@ -144,7 +144,7 @@ def render_text(flavor, site, disk, kind, lab=False, passphrase=None, disk_gb=No
         packages += ["plymouth-theme-script", "plymouth-plugin-label", "plymouth-scripts", "fontconfig"]
     storage = layout(disk_gb, lab)
     files = ""
-    for name in ("baseline.sh", "branding.sh", "plymouth.sh", "harden.sh", "audit.sh", "failure.sh", "export.sh", "result_gate.py", "native_checks.py", "package_source.py"):
+    for name in ("baseline.sh", "branding.sh", "plymouth.sh", "harden.sh", "audit.sh", "failure.sh", "export.sh", "result_gate.py", "native_checks.py", "package_source.py", "set_hostname.py"):
         files += file_fragment("/usr/local/libexec/balboa/" + name, (ROOT / "guest" / name).read_text(), True)
     if flavor == "laptop":
         for name in ("laptop_repos.py", "epel.repo", "RPM-GPG-KEY-EPEL-10"):
