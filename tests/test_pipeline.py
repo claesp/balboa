@@ -219,6 +219,8 @@ class PipelineTests(unittest.TestCase):
                 self.assertEqual("\nplymouth-theme-script\n" in text, enabled)
                 self.assertEqual("\nplymouth-plugin-label\n" in text, enabled)
                 self.assertEqual("\nfontconfig\n" in text, enabled)
+                self.assertEqual(" > /usr/share/plymouth/themes/balboa/spinner.png\n" in text, enabled)
+                self.assertEqual(" > /usr/share/plymouth/themes/balboa/entry.png\n" in text, enabled)
                 self.assertIn("audit=1 audit_backlog_limit=8192", boot)
                 if lab:
                     expected = ("console=ttyS0,115200n8 console=tty0" if enabled else
@@ -260,10 +262,24 @@ class PipelineTests(unittest.TestCase):
             with self.subTest(value=value), self.assertRaises(ValueError):
                 valid_site({**self.site, "branding_text": value})
         label = '<logo> & "example"'
-        root = ET.fromstring(branding.vector(label, "login.png"))
-        texts = [element.text for element in root.iter() if element.tag.endswith("text")]
-        self.assertEqual(texts, [label, "Powered by Rocky Linux"])
-        self.assertNotIn("Powered by Rocky Linux", branding.vector(label, "boot.png"))
+        for name in branding.SIZES:
+            with self.subTest(name=name):
+                root = ET.fromstring(branding.vector(label, name))
+                text, = root
+                self.assertTrue(text.tag.endswith("}text"))
+                self.assertEqual(text.text, label)
+                self.assertEqual(text.get("font-weight"), "700")
+
+    def test_spinner_arc_stays_visible_over_the_track(self):
+        from balboa import branding
+        result = subprocess.run([
+            branding.image_tool(), "png:-", "-format",
+            "%[fx:p{64,15}.a] %[fx:p{15,64}.a] %[fx:p{64,64}.a]", "info:"],
+            input=branding.plymouth_assets()["spinner.png"], capture_output=True, check=True).stdout
+        arc, track, center = map(float, result.split())
+        self.assertEqual((arc, center), (1, 0))
+        self.assertGreater(track, 0)
+        self.assertLess(track, arc)
 
     def test_render_creates_three_pngs_with_manifest_and_embedded_bytes(self):
         import base64

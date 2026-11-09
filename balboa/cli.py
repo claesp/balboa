@@ -195,7 +195,7 @@ def parser():
     generate.add_argument("--kind", choices=("dvd",), default="dvd")
     generate.add_argument("--boot-splash", action=argparse.BooleanOptionalAction, default=None,
                           help="Animated Plymouth splash. Defaults: production enabled, lab disabled.")
-    generate.add_argument("--branding-text", help="Text below the logo. Overrides site branding_text. Default: Balboa.")
+    generate.add_argument("--branding-text", help="Name shown in branding images. Overrides site branding_text. Default: Balboa.")
     generate.add_argument("--output", type=Path, required=True)
     generate.add_argument("--disk", help="The only disk that the installer can erase.")
     generate.add_argument("--disk-size-gb", type=int, help="Fixed disk budget in decimal GB. Defaults: production 128, lab 32.")

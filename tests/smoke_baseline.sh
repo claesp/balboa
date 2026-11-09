@@ -73,6 +73,7 @@ printf 'BOOT_SPLASH=%s\n' "$splash" >> /etc/balboa/image.conf
 if [[ "$splash" == yes ]]; then
     install -d -m 0755 /usr/share/plymouth/themes/balboa
     install -m 0644 /workspace/guest/plymouth/* /usr/share/plymouth/themes/balboa/
+    install -m 0644 "$(dirname "$ks")/branding/plymouth/"*.png /usr/share/plymouth/themes/balboa/
 fi
 bash /workspace/guest/baseline.sh
 if [[ "$splash" == yes ]]; then

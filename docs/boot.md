@@ -6,9 +6,10 @@ The normal lab mode retains a text boot for automatic serial unlock.
 
 GRUB shows the generated photo before Linux starts.
 Plymouth then reuses the same image.
-A spinner shows activity until the system reaches its normal startup target.
+A rotating ring shows activity beneath the configured name.
+The ring and the name use the same light color.
 
-The encrypted disk prompt uses a masked entry field.
+The encrypted disk prompt uses a dark entry field with light masked characters.
 The prompt does not show the passphrase.
 A spinner indicates activity and does not claim an exact completion percentage.
 

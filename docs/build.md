@@ -114,7 +114,7 @@ python3 -m balboa iso build/production-server/installation.ks --output build/bal
 ```
 
 The render step also creates three PNG images under the output directory in `branding/`.
-Set `branding_text` in the site file to put your text below the logo.
+Set `branding_text` in the site file to specify the name in the images.
 See [Boot and desktop images](branding.md) for image locations and the command override.
 Production renders enable Plymouth by default.
 Use `--no-boot-splash` for a text boot without the Plymouth packages.

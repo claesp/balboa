@@ -159,6 +159,8 @@ def render_text(flavor, site, disk, kind, lab=False, passphrase=None, disk_gb=No
         for name in ("balboa.plymouth", "balboa.script"):
             files += file_fragment("/usr/share/plymouth/themes/balboa/" + name,
                                    (ROOT / "guest/plymouth" / name).read_text(), mode="0644")
+        for name, data in branding.plymouth_assets().items():
+            files += file_fragment("/usr/share/plymouth/themes/balboa/" + name, data, mode="0644")
     if definition["desktop"]:
         files += "install -d -m 0755 /etc/firefox /etc/firefox/policies\n"
         files += file_fragment("/etc/firefox/policies/policies.json",
@@ -285,6 +287,10 @@ def render(args):
     (output / "branding").mkdir()
     for name, data in assets.items():
         (output / "branding" / name).write_bytes(data)
+    if site["boot_splash"]:
+        (output / "branding/plymouth").mkdir()
+        for name, data in branding.plymouth_assets().items():
+            (output / "branding/plymouth" / name).write_bytes(data)
     (output / "branding" / "inter.pf2").write_bytes(branding.grub_font())
     text, definition = render_text(args.flavor, site, disk, args.kind, args.lab, passphrase, args.disk_size_gb, lab_tls)
     if not args.lab:

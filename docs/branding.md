@@ -3,7 +3,7 @@
 The render command creates three PNG images.
 PNG is a format for image files.
 The boot image and wallpaper use a fixed Unsplash mountain photo.
-All three images show a geometric logo and your text below it.
+All three images show the configured name in large, light Inter Bold text.
 
 The render host requires ImageMagick with SVG support, Fontconfig, and `grub2-mkfont` or `grub-mkfont`.
 The repository supplies the Inter font files.
@@ -43,16 +43,19 @@ The render output contains these three images:
 | --- | --- | --- |
 | `branding/boot.png` | 1920 × 1080 | Background for GRUB and Plymouth |
 | `branding/wallpaper.png` | 2560 × 1440 | Default GNOME wallpaper |
-| `branding/login.png` | 640 × 180 | Logo banner for the GNOME login screen |
+| `branding/login.png` | 640 × 180 | Name banner for the GNOME login screen |
 
 All flavors generate all three files for review.
 The server installs only the boot image.
 The workstation and laptop install all three images.
 
-The login image includes the exact phrase `Powered by Rocky Linux`.
 The login banner has a transparent background.
-Only the logo and text remain visible over the GDM background.
-GDM shows the image in its logo area.
+GDM shows the name over its own background in the logo area.
+The name sits near the lower right of the wallpaper.
+
+If graphical boot is enabled, the render also writes `branding/plymouth/spinner.png` and `branding/plymouth/entry.png`.
+Plymouth uses these images for the rotating ring and the disk password field.
+The ring and the name use the same light foreground color.
 
 The renderer embeds the images into the Kickstart file.
 The ISO build does not require separate image copies.
@@ -89,14 +92,15 @@ The [Unsplash source page](https://unsplash.com/photos/aerial-view-of-mountains-
 The image uses the [Unsplash License](https://unsplash.com/license).
 
 The source photo resides in `assets/photos/giau-pass.jpg`.
-The official Inter 4.1 font resides in `assets/fonts/Inter-Regular.ttf`.
+The official Inter 4.1 fonts reside in `assets/fonts/Inter-Regular.ttf` and `assets/fonts/Inter-Bold.ttf`.
+The renderer uses the bold font for the name in the images.
 The repository retains its license in `assets/fonts/OFL.txt`.
 
 The source record is `assets/sources.json`.
 The renderer requires matching source digests before image generation.
 It crops each photo to fill its target dimensions and applies a dark overlay for text contrast.
 
-The renderer uses a private font configuration for Inter.
+The renderer uses a private font configuration for both Inter weights.
 It does not require a system-wide Inter installation on the build host.
 It also generates `branding/inter.pf2` for GRUB text.
 That bitmap uses the Inter glyphs with the converted family name `BalboaBoot`.

@@ -1,69 +1,58 @@
 Window.SetBackgroundTopColor(0.027, 0.071, 0.122);
 Window.SetBackgroundBottomColor(0.027, 0.071, 0.122);
 background_image = Image("boot.png");
+spinner_image = Image("spinner.png");
+entry_image = Image("entry.png");
 background = Sprite();
-box_image = Image("box.png").Scale(520, 112);
-entry_image = Image("entry.png").Scale(340, 44);
-lock_image = Image("lock.png").Scale(30, 36);
-box = Sprite(box_image);
-entry = Sprite(entry_image);
-lock = Sprite(lock_image);
+spinner = Sprite();
+entry = Sprite();
 caption = Sprite();
 mask = Sprite();
-hint = Sprite();
 message = Sprite();
 mode = "normal";
 frame = 0;
 width = 0;
 height = 0;
-dot_image = Image.Text("o", 0.322, 0.875, 0.749, 1, "Inter 16");
-for (index = 0; index < 8; index++)
-    dots[index] = Sprite(dot_image);
 
-fun text_at(sprite, text, y, red, green, blue)
+fun text_at(sprite, text, y)
 {
     if (text == "")
     {
         sprite.SetOpacity(0);
         return;
     }
-    local.image = Image.Text(text, red, green, blue, 1, "Inter 16");
+    local.image = Image.Text(text, 241 / 255, 250 / 255, 251 / 255, 1, "Inter 16");
     if (local.image.GetWidth() > Window.GetWidth() * 0.9)
         local.image = local.image.Scale(Window.GetWidth() * 0.9,
             local.image.GetHeight() * Window.GetWidth() * 0.9 / local.image.GetWidth());
     sprite.SetImage(local.image);
     sprite.SetPosition(Window.GetX() + (Window.GetWidth() - local.image.GetWidth()) / 2,
-                       Window.GetY() + y, 30);
+                       Window.GetY() + y - local.image.GetHeight() / 2, 30);
     sprite.SetOpacity(1);
 }
 
 fun normal()
 {
     global.mode = "normal";
-    box.SetOpacity(0);
+    spinner.SetOpacity(1);
     entry.SetOpacity(0);
-    lock.SetOpacity(0);
+    caption.SetOpacity(0);
     mask.SetOpacity(0);
-    text_at(caption, "Starting the system", Window.GetHeight() * 0.73, 0.945, 0.980, 0.984);
-    text_at(hint, "Esc shows boot messages", Window.GetHeight() * 0.9, 0.722, 0.831, 0.863);
 }
 
 fun password(prompt, bullets)
 {
     global.mode = "password";
-    box.SetOpacity(1);
+    spinner.SetOpacity(0);
     entry.SetOpacity(1);
-    lock.SetOpacity(1);
-    text_at(caption, "Unlock the encrypted system disk", Window.GetHeight() * 0.57, 0.945, 0.980, 0.984);
+    text_at(caption, "Unlock the encrypted system disk", Window.GetHeight() * 0.59);
     local.visible = bullets;
     if (local.visible > 24)
         local.visible = 24;
     local.text = "";
     for (local.index = 0; local.index < local.visible; local.index++)
         local.text += "*";
-    text_at(mask, local.text, Window.GetHeight() * 0.62 + 42, 0.027, 0.071, 0.122);
-    text_at(hint, "Enter unlocks the disk. Esc shows boot messages.",
-            Window.GetHeight() * 0.62 + 132, 0.722, 0.831, 0.863);
+    text_at(mask, local.text, Window.GetHeight() * 0.66);
 }
 
 fun layout()
@@ -78,36 +67,34 @@ fun layout()
     background.SetImage(local.image);
     background.SetPosition(Window.GetX() + (width - local.image.GetWidth()) / 2,
                            Window.GetY() + (height - local.image.GetHeight()) / 2, -10);
-    box.SetPosition(Window.GetX() + width / 2 - 260, Window.GetY() + height * 0.62, 20);
-    lock.SetPosition(Window.GetX() + width / 2 - 211, Window.GetY() + height * 0.62 + 38, 25);
-    entry.SetPosition(Window.GetX() + width / 2 - 170, Window.GetY() + height * 0.62 + 34, 25);
-    for (local.index = 0; local.index < 8; local.index++)
-        dots[local.index].SetPosition(
-            Window.GetX() + width / 2 + Math.Cos(local.index * 6.283185 / 8) * 15 - dot_image.GetWidth() / 2,
-            Window.GetY() + height * 0.82 + Math.Sin(local.index * 6.283185 / 8) * 15, 20);
+    local.entry_width = width * 0.45;
+    if (local.entry_width > entry_image.GetWidth())
+        local.entry_width = entry_image.GetWidth();
+    entry.SetImage(entry_image.Scale(local.entry_width, entry_image.GetHeight()));
+    entry.SetPosition(Window.GetX() + (width - local.entry_width) / 2,
+                      Window.GetY() + height * 0.66 - entry_image.GetHeight() / 2, 20);
+    local.spinner_size = height * 0.072;
+    global.spinner_base = spinner_image.Scale(local.spinner_size, local.spinner_size);
 }
 
 fun refresh()
 {
     if (width != Window.GetWidth() || height != Window.GetHeight())
         layout();
+    if (mode == "password")
+        return;
     global.frame++;
-    if (frame >= 48)
+    if (frame >= 60)
         global.frame = 0;
-    for (local.index = 0; local.index < 8; local.index++)
-    {
-        local.opacity = 0.2;
-        if (local.index == Math.Int(frame / 6))
-            local.opacity = 1;
-        if (mode == "password")
-            local.opacity = 0;
-        dots[local.index].SetOpacity(local.opacity);
-    }
+    local.image = spinner_base.Rotate(6.283185 * frame / 60);
+    spinner.SetImage(local.image);
+    spinner.SetPosition(Window.GetX() + (width - local.image.GetWidth()) / 2,
+                        Window.GetY() + height * 0.60 - local.image.GetHeight() / 2, 20);
 }
 
 fun display_message(text)
 {
-    text_at(message, text, Window.GetHeight() * 0.95, 1, 0.78, 0.45);
+    text_at(message, text, Window.GetHeight() * 0.92);
 }
 
 fun hide_message(text)

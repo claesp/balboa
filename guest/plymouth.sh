@@ -7,10 +7,9 @@ fi
 
 theme=/usr/share/plymouth/themes/balboa
 test -s "$theme/balboa.script"
+test -s "$theme/spinner.png"
+test -s "$theme/entry.png"
 install -m 0644 /boot/grub2/themes/balboa/boot.png "$theme/boot.png"
-for asset in box.png entry.png lock.png; do
-    install -m 0644 "/usr/share/plymouth/themes/script/$asset" "$theme/$asset"
-done
 install -d -m 0755 /etc/plymouth /etc/dracut.conf.d
 cat > /etc/plymouth/plymouthd.conf <<'CONF'
 [Daemon]

@@ -442,3 +442,17 @@ The DVD-only native assessment rejects that key.
 The firmware source list reports stable LVFS as enabled and LVFS testing as disabled.
 The desktop account has an empty list of Flatpak remotes.
 See [Laptop package and firmware sources](package-sources.md#laptop-package-and-firmware-sources) for the procedure.
+
+## Name-only branding and rotating ring
+
+The November 9 render uses the configured name in Inter Bold for the boot image, wallpaper, and transparent login banner.
+The boot ring and disk prompt text use the same light color as the name.
+The startup screen uses the name and ring as its normal display.
+
+All 60 local tests pass.
+The production laptop Kickstart resolves 624 packages from the locked DVD without network access.
+The generated images reside in `build/wordmark-x1/branding/`.
+
+An offline QEMU overlay of the laptop test disk shows the new prompt, rotating ring, and login banner.
+The disk prompt masks typed characters, and Esc switches to the text view.
+The visual records reside in `build/wordmark-review/vm/`.
