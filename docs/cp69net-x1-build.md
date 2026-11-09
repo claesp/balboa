@@ -1,5 +1,40 @@
 # CP69net X1 Carbon Gen 13 test images
 
+## November 9 Abisko build
+
+This build uses revision `dde9e90` and the private `cp69net.json` site file.
+The wallpaper and boot image use the Abisko photo and show its credit in the lower left corner.
+Plymouth puts the rotating ring at the center of the screen.
+The transparent login image is identical to the image in the previous build.
+See [Boot and desktop images](branding.md) for the photo source and image files.
+
+DNF Automatic installs security updates after initial hardening and the first assessment.
+Use DNF to install packages and manage repositories.
+See [Desktop package updates](updates.md) for the commands and schedule.
+
+The ISO is `build/balboa-cp69net-laptop-x1-carbon-gen13-20261109-abisko.iso`.
+Its size is 10234363904 bytes, or approximately 9.53 GiB.
+Use a USB device with at least 16 GB of capacity.
+The installer erases the entire `nvme0n1` disk and creates the fixed 128 GB layout.
+Keep the ISO private because it contains the configured LUKS passphrase.
+
+The render and build log reside in `build/cp69net-x1-20261109-abisko/`.
+The offline package test resolves 611 packages from the locked Rocky Linux 10.2 DVD.
+The ISO manifest and the `.iso.sha256` checksum file reside beside the ISO.
+
+```text
+934adc3838a8cdd1d2e1d110bfdc65dd9819782b004ca9d3bd94327c5a5ec8fa
+```
+
+The embedded media checksum reports `PASS`.
+QEMU starts Anaconda from a read-only UEFI USB device and reads the embedded Kickstart.
+The test stops at the disk check because the VM has no NVMe installation disk.
+The USB boot test records reside in `build/x1-usb-boot-20261109-abisko/`.
+
+A separate QEMU test on an installed lab system shows the centered ring and the disk prompt.
+The photo credit stays visible on the 1280 × 800 screen.
+The visual test records reside in `build/abisko-review-final/`.
+
 ## November 9 build
 
 This build uses revision `feabd13` and the private `cp69net.json` site file.
