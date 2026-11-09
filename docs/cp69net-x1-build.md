@@ -1,10 +1,39 @@
-# CP69net X1 Carbon Gen 13 test image
+# CP69net X1 Carbon Gen 13 test images
 
-The build date is November 8, 2026.
+## November 9 build
+
+This build uses revision `feabd13` and the private `cp69net.json` site file.
+The boot image, wallpaper, and login banner show the configured name in Inter Bold.
+Plymouth uses the rotating ring and the revised disk prompt.
+The image configures the approved Rocky and EPEL sources and the stable LVFS firmware remote after initial hardening.
+The laptop uses RPM sources for desktop applications.
+
+The ISO is `build/balboa-cp69net-laptop-x1-carbon-gen13-20261109.iso`.
+Its size is 10235871232 bytes, or approximately 9.53 GiB.
+Use a USB device with at least 16 GB of capacity.
+The installer erases the entire `nvme0n1` disk and creates the fixed 128 GB layout.
+Keep the ISO private because it contains the configured LUKS passphrase.
+
+The render and build log reside in `build/wordmark-x1/`.
+The offline preflight resolves 624 packages from the locked Rocky Linux 10.2 DVD.
+The ISO manifest and the `.iso.sha256` checksum file reside beside the ISO.
+
+```text
+7d1e6df22031673bcf33cf947a0028bf025f9f69e5ab71c37dae006831359cac
+```
+
+The embedded media checksum reports `PASS`.
+The UEFI USB partition contains the updated Kickstart reference and the signed Rocky boot programs.
+QEMU boots from the read-only USB device and starts Anaconda with the embedded Kickstart.
+The test stops at the expected disk check because the VM has no NVMe installation disk.
+The boot test records reside in `build/x1-usb-boot-20261109/`.
+
+## November 8 build
+
 The image uses the private `cp69net.json` file without changes to its contents.
-The latest laptop flavor includes the DVD package restriction, audio additions, Firefox policies, and GNOME Software.
+This build includes the DVD package restriction, audio additions, Firefox policies, and GNOME Software.
 
-## Artifacts
+### Artifacts
 
 The ISO is `build/balboa-cp69net-laptop-x1-carbon-gen13-20261108.iso`.
 Its size is 10235871232 bytes, or approximately 9.53 GiB.
@@ -26,7 +55,7 @@ Keep these artifacts private.
 Their file permissions permit access only by the build account.
 The repository does not contain the private site file or these generated artifacts.
 
-## Installation behavior
+### Installation behavior
 
 The Kickstart targets `nvme0n1` and uses the fixed 128 GB production layout.
 The installer erases the entire selected disk, including existing partitions outside that layout.
@@ -43,7 +72,7 @@ Supply the deployment logging configuration before the production security asses
 The initial DVD security content retains its documented account-shell assessment defect.
 Use [Updated security content](security.md#updated-security-content) after successful initial hardening.
 
-## Build procedure
+### Build procedure
 
 Operate these commands from the repository root on the build host:
 
@@ -60,7 +89,7 @@ The offline dependency test resolves 624 packages with the production splash ena
 The tool container adds `mtools-4.0.43-7.el10` and its matching `glibc-gconv-extra-2.39-121.el10_2` dependency from that DVD.
 These additions affect the build tools, not the target package selection.
 
-## Results and limits
+### Results and limits
 
 All 59 local tests pass.
 Kickstart syntax, guest shell syntax, and security profile tests pass.
