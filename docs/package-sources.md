@@ -9,7 +9,7 @@ The build tools use the separate pinned Rocky container.
 
 The render and ISO commands use DVD media by default.
 They reject the network boot ISO as an installation source.
-The Kickstart selects `cdrom` and defines no additional repositories.
+The Kickstart selects the locked DVD by its volume label. It defines no additional repositories.
 
 The package preflight is the dependency test before an ISO build.
 It operates in a Podman container without network access.
@@ -17,7 +17,7 @@ It reads BaseOS and AppStream metadata from the authenticated DVD.
 It resolves the mandatory core group, explicit packages, kernel, dependencies, and exclusions against those repositories only.
 
 Every ISO build requires this package preflight.
-The test also requires the current initial hardening guard in the Kickstart.
+The test also requires the current file installer and initial hardening guard beside the Kickstart.
 Old Kickstart files require a new render before an ISO build.
 
 Operate the following commands from the repository root on the build host.

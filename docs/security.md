@@ -85,7 +85,10 @@ The selected CIS profile can disable wireless interfaces.
 
 ## Installation sequence
 
-The installer applies the common controls through `%post`.
+The installer copies `balboa-files/` from the ISO into the target filesystem.
+It applies SELinux labels to the copied files.
+The next `%post` section applies the common controls. [Add custom files](build.md#add-custom-files)
+
 On first boot, the system applies the selected OpenSCAP remediation.
 Remediation is an automatic change that addresses a security rule.
 

@@ -268,6 +268,7 @@ The ISO build creates a JSON manifest and a package list for the tools.
 It also creates a `.dvd-packages.json` report for the offline package selection.
 The manifest records the source digest, Kickstart digest, flavor, and security profile.
 It also records the local tool image identity and source lock digest.
+The `files_sha256` field identifies the files in `balboa-files/` and their permissions.
 The installed system records its package list and datastream digest separately.
 
 Generated Kickstart files contain account password digests and the public key.
@@ -280,6 +281,40 @@ The build records support audits. Separate builds can produce different bytes.
 The target installation uses fixed DVD package versions.
 Online repositories for build tools and later installed system updates change over time.
 For controlled releases, retain the tool package records, update records, and their repository metadata.
+
+## Add custom files
+
+The renderer creates `balboa-files/` beside `installation.ks`.
+The directory contains scripts, configuration, and generated images as ordinary files.
+Each path inside `balboa-files/` matches a path on the installed system.
+For example, `balboa-files/etc/testfile.conf` becomes `/etc/testfile.conf`.
+
+On the build host, enter these commands from the repository root.
+Place your source file at `testfile.conf` before the second command.
+The example selects `nvme0n1`. The installer erases that disk and all its partitions.
+
+```sh
+python3 -m balboa render --flavor laptop --site site.json --disk nvme0n1 --output build/laptop-files
+install -D -m 0644 testfile.conf build/laptop-files/balboa-files/etc/testfile.conf
+python3 -m balboa iso build/laptop-files/installation.ks --usb-uefi --output build/laptop-files.iso
+```
+
+After you render the Kickstart, add your files before you build the ISO.
+The `-D` flag creates missing parent directories.
+Set the desired permissions on each file before the ISO build.
+Use a new render directory if your previous render lacks `balboa-files/`.
+
+The installer copies regular files as root and preserves their permission bits.
+It creates missing parent directories with mode `0755`.
+It rejects symbolic links, special files, and files under `/dev`, `/proc`, `/run`, or `/sys`.
+Use the actual directory if a target path contains a symbolic link.
+The ISO builder compares file contents and permissions before it accepts the image.
+The builder also compares the required hardening files with their project copies.
+
+Kickstart copies the files before it applies the baseline configuration.
+The baseline can change the files that it manages.
+Anaconda records the copy step in `/root/balboa-files.log`.
+See [Installation sequence](security.md#installation-sequence) for the steps that follow.
 
 ## References
 

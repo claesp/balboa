@@ -482,3 +482,16 @@ The service installs `libxslt-1.1.39-8.el10_2.1` for advisory `RLSA-2026:28584`.
 The ordinary `libinput` update remains available for manual installation.
 The test retains enforcing SELinux and records the transaction in the journal.
 The test records reside in `build/desktop-updates-review/`.
+
+## Custom files on the installation ISO
+
+The November 11 test adds `etc/testfile.conf` to `balboa-files/` after the laptop render.
+The ISO inspection finds the file on the media with its original contents and mode `0640`.
+The Podman tests resolve the packages for all three flavors from the locked DVD without network access.
+All 68 local tests pass. [Add custom files](build.md#add-custom-files)
+
+QEMU completes two UEFI installations with the same laptop ISO.
+One guest boots from virtual USB storage. The other guest boots from a virtual optical drive.
+Anaconda finds the locked DVD by its volume label in both tests.
+After boot, both guests contain the exact bytes at `/etc/testfile.conf`.
+The file has mode `0640`, root ownership, and the SELinux type `etc_t` in both guests.

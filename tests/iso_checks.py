@@ -4,6 +4,7 @@ import argparse
 from pathlib import Path
 import re
 import subprocess
+import sys
 import tempfile
 
 
@@ -11,18 +12,27 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("iso")
     parser.add_argument("kickstart")
+    parser.add_argument("--files-sha256", required=True)
     parser.add_argument("--usb-uefi", action="store_true")
     args = parser.parse_args()
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    from guest.install_files import payload_digest
+
     iso, ks = args.iso, args.kickstart
     with tempfile.TemporaryDirectory() as temporary:
         root = Path(temporary)
-        for name in ("installation.ks", "EFI/BOOT/grub.cfg", "boot/grub2/grub.cfg"):
+        for name in ("installation.ks", "install_files.py", "balboa-files", "EFI/BOOT/grub.cfg", "boot/grub2/grub.cfg"):
             destination = root / name
             destination.parent.mkdir(parents=True, exist_ok=True)
             subprocess.run(["xorriso", "-osirrox", "on", "-indev", iso, "-extract", "/" + name, str(destination)],
                            check=True, capture_output=True)
         if (root / "installation.ks").read_bytes() != Path(ks).read_bytes():
             raise ValueError("The embedded Kickstart differs from the reviewed file.")
+        if (root / "install_files.py").read_bytes() != (Path("/workspace/guest") / "install_files.py").read_bytes():
+            raise ValueError("The ISO contains a different file installer.")
+        if payload_digest(root / "balboa-files") != args.files_sha256:
+            raise ValueError("The ISO files differ from the selected files or permissions.")
+        print("The ISO files and permissions match the selected files.")
         for config in (root / "EFI/BOOT/grub.cfg", root / "boot/grub2/grub.cfg"):
             lines = [line for line in config.read_text().splitlines() if line.strip().startswith(("linux ", "linuxefi "))]
             if not lines or any("inst.ks=" not in line or "installation.ks" not in line for line in lines):

@@ -16,6 +16,7 @@
     },
     "dvd": {
       "filename": "Rocky-10.2-x86_64-dvd1.iso",
+      "volume_label": "Rocky-10-2-x86_64-dvd",
       "sha256": "16ca9c96cdb221ba6e1f68579f21bd69fd8da81c6a921d9068949796f91c8feb"
     }
   }

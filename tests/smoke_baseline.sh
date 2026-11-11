@@ -22,62 +22,12 @@ dnf -y --setopt=install_weak_deps=False install "${packages[@]}" > /tmp/balboa-p
 }
 useradd --uid 1000 balboasmoke
 chage --lastday -1 balboasmoke
-install -d /etc/balboa /usr/local/libexec/balboa
-cp /workspace/guest/*.sh /usr/local/libexec/balboa/
-install -m 0755 /workspace/guest/{package_source,set_hostname}.py /usr/local/libexec/balboa/
-splash=$(python3 - "$ks" <<'PYTHON'
-import json, pathlib, sys
-print("yes" if json.loads(pathlib.Path(sys.argv[1]).with_suffix(".json").read_text())["boot_splash"] else "no")
-PYTHON
-)
-if [[ "$desktop" == yes || "$splash" == yes ]]; then
-    install -d -m 0755 /usr/share/fonts/balboa
-    install -m 0644 /workspace/assets/fonts/Inter-Regular.ttf /usr/share/fonts/balboa/
-    install -d /etc/fonts/conf.d
-    install -m 0644 /workspace/guest/Inter.conf /etc/fonts/conf.d/55-balboa-inter.conf
-fi
-printf 'FLAVOR=%s\nADMIN_USER=balboasmoke\nDESKTOP=%s\nLAB=no\n' "$flavor" "$desktop" > /etc/balboa/image.conf
-python3 - "$flavor" <<'PY'
-import json
-from pathlib import Path
-import sys
-definition = json.loads(Path('/workspace/flavors', sys.argv[1] + '.json').read_text())
-Path('/etc/balboa/native-policy.json').write_text(json.dumps({'excluded_packages': definition['exclude']}))
-PY
-if [[ "$desktop" == yes ]]; then
-    python3 - "$ks" <<'PYTHON'
-import base64
-import json
-from pathlib import Path
-import shlex
-import sys
-lines = Path(sys.argv[1]).read_text().splitlines()
-for destination in ('/etc/firefox/policies/policies.json', '/etc/dnf/automatic.conf',
-                    '/etc/systemd/system/dnf-automatic.service.d/60-balboa-guard.conf'):
-    line, = (line for line in lines if line.endswith(' > ' + destination))
-    command = shlex.split(line)
-    if command[:2] != ['printf', '%s'] or command[3:] != ['|', 'base64', '-d', '>', destination]:
-        raise ValueError(f'The file {destination} uses an unexpected format.')
-    data = base64.b64decode(command[2], validate=True)
-    if destination.endswith('.json'):
-        json.loads(data)
-    path = Path(destination)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_bytes(data)
-    path.chmod(0o644)
-PYTHON
-    install -d -m 0755 /usr/share/backgrounds/balboa
-    install -m 0644 "$(dirname "$ks")/branding/wallpaper.png" "$(dirname "$ks")/branding/login.png" /usr/share/backgrounds/balboa/
-fi
-install -d -m 0755 /boot/grub2/themes/balboa
-install -m 0644 "$(dirname "$ks")/branding/boot.png" /boot/grub2/themes/balboa/boot.png
-printf 'BOOT_SPLASH=%s\n' "$splash" >> /etc/balboa/image.conf
-if [[ "$splash" == yes ]]; then
-    install -d -m 0755 /usr/share/plymouth/themes/balboa
-    install -m 0644 /workspace/guest/plymouth/* /usr/share/plymouth/themes/balboa/
-    install -m 0644 "$(dirname "$ks")/branding/plymouth/"*.png /usr/share/plymouth/themes/balboa/
-fi
-bash /workspace/guest/baseline.sh
+render_dir=$(dirname "$ks")
+python3 "$render_dir/install_files.py" "$render_dir/balboa-files" /
+sed -i 's/^ADMIN_USER=.*/ADMIN_USER=balboasmoke/; s/^LAB=.*/LAB=no/' /etc/balboa/image.conf
+source /etc/balboa/image.conf
+splash=$BOOT_SPLASH
+bash /usr/local/libexec/balboa/baseline.sh
 prefix=pc
 if [[ "$flavor" == server ]]; then
     prefix=srv

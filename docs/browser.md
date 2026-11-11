@@ -15,7 +15,8 @@ The package remains the official Firefox build with a restricted configuration.
 ## Policy file
 
 The source policy is `guest/firefox-policies.json`.
-The renderer embeds it into desktop Kickstart files at `/etc/firefox/policies/policies.json`.
+The renderer puts the policy in `balboa-files/` for desktop images.
+The installer copies it to `/etc/firefox/policies/policies.json`.
 The installer sets mode `0755` on the directory.
 The installer gives root ownership and mode `0644` to the file.
 

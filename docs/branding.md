@@ -58,10 +58,10 @@ If you enable graphical boot, the render command also writes `branding/plymouth/
 Plymouth uses these images for the rotating ring and the disk password field.
 The ring and the name use the same light foreground color.
 
-The renderer embeds the images into the Kickstart file.
-The ISO build does not require separate image copies.
+The renderer places the images for installation in `balboa-files/`.
+The ISO builder copies that directory onto the ISO.
 A digest identifies file contents.
-The manifest records the image dimensions, text, and SHA256 digests.
+The manifest records the image dimensions, text, and SHA256 digests. [Add custom files](build.md#add-custom-files)
 
 ## Installed behavior
 

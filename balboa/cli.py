@@ -124,6 +124,8 @@ def validate(args):
 
 
 def iso(args):
+    from guest.install_files import payload_digest
+
     if args.kind != "dvd":
         raise ValueError("Installation packages must come from the locked DVD. Use --kind dvd.")
     lock = source_lock()
@@ -138,6 +140,11 @@ def iso(args):
         raise ValueError("The Kickstart package source policy is out of date. Render it again before ISO creation.")
     if sha256(ks) != metadata["kickstart_sha256"] or metadata["source_kind"] != args.kind:
         raise ValueError("The Kickstart manifest does not match the image request.")
+    payload = ks.parent / "balboa-files"
+    copier = ks.parent / "install_files.py"
+    if not payload.is_dir() or not copier.is_file():
+        raise ValueError("The Kickstart requires balboa-files and install_files.py. Render it again.")
+    files_sha256 = payload_digest(payload)
     output = args.output.resolve()
     if output.exists():
         raise ValueError("The output ISO exists. Select a new path.")
@@ -145,20 +152,23 @@ def iso(args):
     validate(argparse.Namespace(kickstart=ks, packages=True, cache=args.cache))
     cmdline = "console=tty0 console=ttyS0,115200n8" if metadata["lab"] else ""
     boot_menu = ["--replace", "set timeout=60", "set timeout=5"] if metadata["lab"] else []
+    additions = ["--add", "/input/balboa-files", "--add", "/input/install_files.py"]
     try:
         if args.native:
-            run(["mkksiso", "--ks", ks, "--cmdline", cmdline] + boot_menu + [source, output], umask=0o077)
+            run(["mkksiso", "--ks", ks, "--cmdline", cmdline, "--add", payload, "--add", copier] +
+                boot_menu + [source, output], umask=0o077)
         elif args.usb_uefi:
             container(["python3", "/workspace/scripts/mkksiso-uefi.py", "--ks", "/input/" + ks.name,
-                       "--cmdline", cmdline] + boot_menu + ["/source/" + source.name, "/output/" + output.name],
+                       "--cmdline", cmdline] + additions + boot_menu + ["/source/" + source.name, "/output/" + output.name],
                       [(ROOT, "/workspace", "ro"), (source.parent, "/source", "ro"),
                        (ks.parent, "/input", "ro"), (output.parent, "/output", "rw")], rootless_root=True)
         else:
             container(["bash", "-c", 'umask 077; exec "$@"', "bash", "mkksiso", "--skip-mkefiboot", "--ks", "/input/" + ks.name,
-                       "--cmdline", cmdline] + boot_menu + ["/source/" + source.name, "/output/" + output.name],
+                       "--cmdline", cmdline] + additions + boot_menu + ["/source/" + source.name, "/output/" + output.name],
                       [(source.parent, "/source", "ro"), (ks.parent, "/input", "ro"),
                        (output.parent, "/output", "rw")])
-        container(["python3", "/workspace/tests/iso_checks.py", "/media/" + output.name, "/input/" + ks.name] +
+        container(["python3", "/workspace/tests/iso_checks.py", "/media/" + output.name, "/input/" + ks.name,
+                   "--files-sha256", files_sha256] +
                   (["--usb-uefi"] if args.native or args.usb_uefi else []),
                   [(ROOT, "/workspace", "ro"), (output.parent, "/media", "ro"), (ks.parent, "/input", "ro")])
         output.chmod(0o600)
@@ -166,6 +176,7 @@ def iso(args):
         output.unlink(missing_ok=True)
         raise
     metadata.update({"iso_sha256": sha256(output), "source_sha256": image["sha256"],
+                     "files_sha256": files_sha256,
                      "usb_uefi": args.native or args.usb_uefi,
                      "efi_builder": "native" if args.native else "mtools" if args.usb_uefi else "unchanged",
                      "tools_base": lock["container"],

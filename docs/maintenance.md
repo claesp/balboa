@@ -75,6 +75,8 @@ Do not replace the trusted fingerprint because a download presents a different k
 An unreviewed key change removes the authentication boundary.
 
 Record the new ISO filename and digest in `sources.lock.json`.
+Use `xorriso -indev <dvd-iso> -pvd_info` to find the DVD volume label.
+Record that label in `sources.lock.json`.
 Record the official container digest in the same file.
 After a source change, rebuild the tools.
 Do the tests for all flavors.

@@ -59,6 +59,8 @@ Without `--packages`, the parser does not assess package availability or install
 A successful parser result does not prove a successful installation.
 Use QEMU for those tests.
 
+The ISO test compares the files and permissions in `balboa-files/` with the files selected for the build.
+
 For `--usb-uefi` and native builds, the ISO test also reads the appended UEFI partition.
 It requires the USB GRUB configuration to match the customized ISO configuration.
 It also requires the signed EFI boot programs to match their ISO copies.

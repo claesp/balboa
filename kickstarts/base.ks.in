@@ -57,10 +57,15 @@ rocky-gpg-keys
 -tftp
 %end
 
+%post --nochroot --interpreter=/bin/bash --erroronfail --log=/mnt/sysroot/root/balboa-files.log
+set -euo pipefail
+python3 /run/install/repo/install_files.py /run/install/repo/balboa-files /mnt/sysroot
+%end
+
 %post --interpreter=/bin/bash --erroronfail --log=/root/balboa-install.log
 set -euo pipefail
 umask 077
-@@FILES@@
+@@POST_SETUP@@
 bash /usr/local/libexec/balboa/baseline.sh
 systemctl enable balboa-harden.service balboa-audit.service
 %end

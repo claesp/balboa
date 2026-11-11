@@ -11,6 +11,7 @@ import xml.etree.ElementTree as ET
 from unittest.mock import patch
 
 from balboa.cli import checksum_entry
+from balboa.dvd import dvd_device
 from balboa.render import render_text, valid_site, read_site, render
 from balboa.vm import decode_evidence, extract_evidence, inspect_system, observe
 from balboa.storage import layout
@@ -18,6 +19,7 @@ from balboa.policy import EXCLUSIONS, tailoring
 from guest.result_gate import assess, NS
 from guest.native_checks import validate_fingerprints, validate_key_access
 from guest.set_hostname import machine_hostname
+from guest.install_files import install_tree, payload_digest
 
 PROFILE = "xccdf_org.ssgproject.content_profile_cis"
 
@@ -149,11 +151,12 @@ class PipelineTests(unittest.TestCase):
                                    "client_certificate_file": "/etc/pki/balboa/client.pem",
                                    "client_key_file": "/etc/pki/balboa/client.key"}}
         valid_site(site)
-        text, _ = render_text("server", site, "vda", "dvd")
+        files = self.root / "balboa-files"
+        text, _ = render_text("server", site, "vda", "dvd", files_dir=files)
         self.assertIn("rootpw --iscrypted " + self.site["root_password_hash"], text)
-        self.assertIn("/etc/systemd/journal-upload.conf.d/60-balboa.conf", text)
-        self.assertIn("install -d -m 0755 /etc/systemd/journal-upload.conf.d", text)
-        self.assertIn("/etc/systemd/system/systemd-journal-upload.service.d/60-balboa-credentials.conf", text)
+        self.assertIn("URL=https://logs.example.test:19532",
+                      (files / "etc/systemd/journal-upload.conf.d/60-balboa.conf").read_text())
+        self.assertTrue((files / "etc/systemd/system/systemd-journal-upload.service.d/60-balboa-credentials.conf").is_file())
         with self.assertRaises(ValueError):
             valid_site({**site, "root_password_hash": "plaintext"})
 
@@ -178,10 +181,12 @@ class PipelineTests(unittest.TestCase):
             render_text("server", self.site, "vda", "dvd", lab_tls=tls)
         with self.assertRaises(ValueError):
             render_text("server", self.site, "vda", "dvd", True, "a" * 40, lab_tls={"../../etc/passwd": "value"})
-        text, _ = render_text("server", self.site, "vda", "dvd", True, "a" * 40, lab_tls=tls)
-        self.assertIn("chmod 0600 /etc/pki/balboa/client.key", text)
-        self.assertIn("chmod 0644 /etc/pki/balboa/ca.pem", text)
-        self.assertIn("install -d -m 0755 /etc/pki/balboa", text)
+        files = self.root / "balboa-files"
+        render_text("server", self.site, "vda", "dvd", True, "a" * 40, lab_tls=tls, files_dir=files)
+        for name, content in tls.items():
+            path = files / "etc/pki/balboa" / name
+            self.assertEqual(path.read_text(), content)
+            self.assertEqual(path.stat().st_mode & 0o777, 0o600 if name.endswith(".key") else 0o644)
 
     def test_logging_rejects_insecure_or_injected_values(self):
         for upload in ({"url": "http://logs.example.test"},
@@ -261,16 +266,18 @@ class PipelineTests(unittest.TestCase):
                 site = {**self.site}
                 if lab == enabled:
                     site["boot_splash"] = enabled
+                files = self.root / f"{flavor}-{lab}-{enabled}"
                 text, _ = render_text(flavor, site, "vda", "dvd", lab,
-                                      "a" * 40 if lab else None)
+                                      "a" * 40 if lab else None, files_dir=files)
                 boot = next(line for line in text.splitlines() if line.startswith("bootloader "))
                 self.assertEqual("rhgb quiet" in boot, enabled)
                 self.assertEqual("plymouth.ignore-serial-consoles" in boot, enabled)
                 self.assertEqual("\nplymouth-theme-script\n" in text, enabled)
                 self.assertEqual("\nplymouth-plugin-label\n" in text, enabled)
                 self.assertEqual("\nfontconfig\n" in text, enabled)
-                self.assertEqual(" > /usr/share/plymouth/themes/balboa/spinner.png\n" in text, enabled)
-                self.assertEqual(" > /usr/share/plymouth/themes/balboa/entry.png\n" in text, enabled)
+                theme = files / "usr/share/plymouth/themes/balboa"
+                self.assertEqual((theme / "spinner.png").is_file(), enabled)
+                self.assertEqual((theme / "entry.png").is_file(), enabled)
                 self.assertIn("audit=1 audit_backlog_limit=8192", boot)
                 if lab:
                     expected = ("console=ttyS0,115200n8 console=tty0" if enabled else
@@ -339,8 +346,7 @@ class PipelineTests(unittest.TestCase):
         self.assertGreater(track, 0)
         self.assertLess(track, arc)
 
-    def test_render_creates_three_pngs_with_manifest_and_embedded_bytes(self):
-        import base64
+    def test_render_creates_three_pngs_with_manifest_and_payload(self):
         import contextlib
         import hashlib
         import struct
@@ -361,21 +367,58 @@ class PipelineTests(unittest.TestCase):
         self.assertEqual(manifest["sources"]["font"]["version"], "4.1")
         self.assertEqual({p.name for p in (output / "branding").glob("*.png")}, set(branding.SIZES))
         ks = (output / "installation.ks").read_text()
+        self.assertIn("/run/install/repo/balboa-files /mnt/sysroot", ks)
+        self.assertNotIn("base64 -d", ks)
+        files = output / "balboa-files"
         for name, size in branding.SIZES.items():
             data = (output / "branding" / name).read_bytes()
             self.assertEqual(data[:8], b"\x89PNG\r\n\x1a\n")
             self.assertEqual(struct.unpack(">II", data[16:24]), size)
             self.assertEqual(manifest["images"][name]["sha256"], hashlib.sha256(data).hexdigest())
-            self.assertIn(base64.b64encode(data).decode(), ks)
+            destination = branding.BOOT_DIR if name == "boot.png" else branding.DESKTOP_DIR
+            self.assertEqual((files / destination.lstrip("/") / name).read_bytes(), data)
         alpha = subprocess.run([
             shutil.which("magick") or shutil.which("convert"), str(output / "branding/login.png"),
             "-format", "%[fx:minima.a] %[fx:maxima.a] %[fx:p{0,0}.a]", "info:"],
             capture_output=True, text=True, check=True).stdout
         self.assertEqual(alpha, "0 1 0")
-        server, _ = render_text("server", self.site, "vda", "dvd")
-        self.assertIn(branding.BOOT_DIR + "/boot.png", server)
-        self.assertNotIn(" > " + branding.DESKTOP_DIR + "/wallpaper.png", server)
-        self.assertNotIn(" > " + branding.DESKTOP_DIR + "/login.png", server)
+        server = self.root / "server-files"
+        render_text("server", self.site, "vda", "dvd", files_dir=server)
+        self.assertTrue((server / branding.BOOT_DIR.lstrip("/") / "boot.png").is_file())
+        self.assertFalse((server / branding.DESKTOP_DIR.lstrip("/")).exists())
+
+    def test_payload_installs_added_files_with_their_permissions(self):
+        files = self.root / "balboa-files"
+        source = files / "etc/testfile.conf"
+        source.parent.mkdir(parents=True)
+        source.write_bytes(b"example=true\n")
+        source.chmod(0o640)
+        target = self.root / "sysroot"
+        target.mkdir()
+        self.assertEqual(install_tree(files, target), ["/etc", "/etc/testfile.conf"])
+        installed = target / "etc/testfile.conf"
+        self.assertEqual(installed.read_bytes(), source.read_bytes())
+        self.assertEqual(installed.stat().st_mode & 0o777, 0o640)
+        self.assertEqual(payload_digest(target), payload_digest(files))
+        installed.chmod(0o644)
+        self.assertNotEqual(payload_digest(target), payload_digest(files))
+
+    def test_payload_rejects_symbolic_links_on_both_sides(self):
+        files = self.root / "balboa-files"
+        files.mkdir()
+        source = files / "etc"
+        source.symlink_to(self.root, target_is_directory=True)
+        with self.assertRaises(ValueError):
+            payload_digest(files)
+        source.unlink()
+        source.mkdir()
+        (source / "testfile.conf").write_text("example=true\n")
+        target = self.root / "sysroot"
+        target.mkdir()
+        (target / "etc").symlink_to(self.root, target_is_directory=True)
+        with self.assertRaises(ValueError):
+            install_tree(files, target)
+        self.assertFalse((self.root / "testfile.conf").exists())
 
     def test_render_reads_site_key_and_does_not_disclose_it_in_metadata(self):
         import contextlib
@@ -408,19 +451,20 @@ class PipelineTests(unittest.TestCase):
         for flavor in ("server", "workstation", "laptop"):
             for kind in ("dvd",):
                 with self.subTest(flavor=flavor, kind=kind):
-                    text, definition = render_text(flavor, self.site, "vda", kind)
+                    files = self.root / flavor
+                    text, definition = render_text(flavor, self.site, "vda", kind, files_dir=files)
                     expected = PROFILE if flavor == "server" else PROFILE + "_workstation_l2"
                     self.assertEqual(definition["profile"], expected)
-                    self.assertEqual("\ncdrom\n" in text, kind == "dvd")
+                    self.assertIn(f"\nharddrive --partition={dvd_device()} --dir=/\n", text)
                     self.assertEqual("\nNetworkManager-wifi\n" in text, flavor == "laptop")
                     self.assertIn("@core --nodefaults", text)
                     self.assertNotIn("@^", text)
                     self.assertIn("--exclude-weakdeps", text)
                     self.assertNotIn("--grow", text)
                     self.assertEqual("\ndnf-automatic\n" in text, flavor != "server")
-                    self.assertEqual(" > /etc/dnf/automatic.conf\n" in text, flavor != "server")
-                    self.assertEqual(" > /etc/systemd/system/dnf-automatic.service.d/60-balboa-guard.conf\n" in text,
-                                     flavor != "server")
+                    self.assertEqual((files / "etc/dnf/automatic.conf").is_file(), flavor != "server")
+                    guard = files / "etc/systemd/system/dnf-automatic.service.d/60-balboa-guard.conf"
+                    self.assertEqual(guard.is_file(), flavor != "server")
 
     def test_storage_has_fixed_sizes_and_identical_test_mounts(self):
         production = layout()

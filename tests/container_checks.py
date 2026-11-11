@@ -40,17 +40,27 @@ def main():
     if "--packages" in sys.argv:
         import dnf
         import argparse
-        from balboa.dvd import catalog, extract_metadata, inventory
+        from balboa.dvd import catalog, dvd_device, extract_metadata, inventory
+        from guest.install_files import payload_files
         arguments = argparse.ArgumentParser()
-        arguments.add_argument('kickstart')
+        arguments.add_argument('kickstart', type=Path)
         arguments.add_argument('--packages', action='store_true')
         arguments.add_argument('--dvd', type=Path, required=True)
         arguments.add_argument('--report', type=Path, required=True)
         options = arguments.parse_args()
-        if parser.handler.method.method != 'cdrom' or parser.handler.repo.repoList:
+        method = parser.handler.method
+        if (method.method != 'harddrive' or method.partition != dvd_device() or method.dir != '/'
+                or parser.handler.repo.repoList):
             raise ValueError('Installation must use only the DVD. Other package sources require review.')
-        from balboa.render import file_fragment
-        text = Path(sys.argv[1]).read_text()
+        render_dir = options.kickstart.resolve().parent
+        guest = Path('/workspace/guest')
+        copier = render_dir / 'install_files.py'
+        if not copier.is_file() or copier.is_symlink() or copier.read_bytes() != (guest / copier.name).read_bytes():
+            raise ValueError('The Kickstart requires the current file installer. Render it again.')
+        payload = render_dir / 'balboa-files'
+        if not payload.is_dir():
+            raise ValueError('The Kickstart requires balboa-files. Render it again.')
+        files = dict(payload_files(payload))
         required = [('baseline.sh', '/usr/local/libexec/balboa/baseline.sh', True),
                     ('harden.sh', '/usr/local/libexec/balboa/harden.sh', True),
                     ('failure.sh', '/usr/local/libexec/balboa/failure.sh', True),
@@ -58,8 +68,9 @@ def main():
                     ('package_source.py', '/usr/local/libexec/balboa/package_source.py', True),
                     ('balboa-harden.service', '/etc/systemd/system/balboa-harden.service', False)]
         for name, destination, executable in required:
-            expected = file_fragment(destination, (Path('/workspace/guest') / name).read_text(), executable)
-            if expected not in text:
+            path = Path(destination.lstrip('/'))
+            mode = 0o755 if executable else 0o600
+            if files.get(path) != mode or (payload / path).read_bytes() != (guest / name).read_bytes():
                 raise ValueError('The Kickstart lacks the current initial package guard. Render it again.')
         with tempfile.TemporaryDirectory() as temporary, dnf.Base() as base:
             directory = Path(temporary) / 'dvd'

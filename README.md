@@ -60,6 +60,7 @@ Use the document that matches your task.
 | Task | Document |
 | --- | --- |
 | Prepare the host and create installation ISOs | [Build and installation](docs/build.md) |
+| Add files to the installed system | [Add custom files](docs/build.md#add-custom-files) |
 | Configure the graphical boot and encrypted disk prompt | [Boot process](docs/boot.md) |
 | Set the logo text and generate boot and desktop images | [Boot and desktop images](docs/branding.md) |
 | Select packages and hardware support | [Minimal flavors](docs/flavors.md) |

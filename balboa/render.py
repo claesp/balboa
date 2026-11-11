@@ -13,7 +13,7 @@ import subprocess
 from urllib.parse import urlsplit
 
 from . import branding
-from .dvd import catalog, CATALOG, source_policy
+from .dvd import catalog, CATALOG, dvd_device, source_policy
 from .storage import kickstart_volumes, layout
 from .policy import EXCLUSIONS, tailoring
 
@@ -113,14 +113,7 @@ def valid_site(site):
     return site
 
 
-def file_fragment(path, content, executable=False, mode=None):
-    encoded = base64.b64encode(content.encode() if isinstance(content, str) else content).decode()
-    mode = mode or ("0755" if executable else "0600")
-    # Paths are repository constants. Site data never enters a shell command.
-    return f"install -d {Path(path).parent}\nprintf '%s' '{encoded}' | base64 -d > {path}\nchmod {mode} {path}\n"
-
-
-def render_text(flavor, site, disk, kind, lab=False, passphrase=None, disk_gb=None, lab_tls=None):
+def render_text(flavor, site, disk, kind, lab=False, passphrase=None, disk_gb=None, lab_tls=None, *, files_dir=None):
     if kind != "dvd":
         raise ValueError("Installation packages must come from the locked DVD. Use --kind dvd.")
     valid_site(site)
@@ -143,72 +136,71 @@ def render_text(flavor, site, disk, kind, lab=False, passphrase=None, disk_gb=No
     if splash:
         packages += ["plymouth-theme-script", "plymouth-plugin-label", "plymouth-scripts", "fontconfig"]
     storage = layout(disk_gb, lab)
-    files = ""
+
+    def stage_file(path, content, mode=0o600):
+        if files_dir is None:
+            return
+        target = files_dir / path.lstrip("/")
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(content.encode() if isinstance(content, str) else content)
+        target.chmod(mode)
+
+    post_setup = ""
     for name in ("baseline.sh", "branding.sh", "plymouth.sh", "harden.sh", "audit.sh", "failure.sh", "export.sh", "result_gate.py", "native_checks.py", "package_source.py", "set_hostname.py"):
-        files += file_fragment("/usr/local/libexec/balboa/" + name, (ROOT / "guest" / name).read_text(), True)
+        stage_file("/usr/local/libexec/balboa/" + name, (ROOT / "guest" / name).read_bytes(), 0o755)
     if flavor == "laptop":
         for name in ("laptop_repos.py", "epel.repo", "RPM-GPG-KEY-EPEL-10"):
-            files += file_fragment("/usr/local/libexec/balboa/" + name, (ROOT / "guest" / name).read_bytes(),
-                                   executable=name.endswith(".py"))
+            stage_file("/usr/local/libexec/balboa/" + name, (ROOT / "guest" / name).read_bytes(),
+                       0o755 if name.endswith(".py") else 0o600)
     assets = branding.images(site.get("branding_text", "Balboa"))
-    files += f"install -d -m 0755 {branding.BOOT_DIR}\n"
-    files += file_fragment(branding.BOOT_DIR + "/boot.png", assets["boot.png"], mode="0644")
-    files += file_fragment(branding.BOOT_DIR + "/theme.txt", branding.GRUB_THEME, mode="0644")
-    files += file_fragment(branding.BOOT_DIR + "/inter.pf2", branding.grub_font(), mode="0644")
-    files += "install -d -m 0755 /usr/share/licenses/balboa-inter\n"
-    files += file_fragment("/usr/share/licenses/balboa-inter/OFL.txt",
-                           (ROOT / "assets/fonts/OFL.txt").read_bytes(), mode="0644")
+    stage_file(branding.BOOT_DIR + "/boot.png", assets["boot.png"], mode=0o644)
+    stage_file(branding.BOOT_DIR + "/theme.txt", branding.GRUB_THEME, mode=0o644)
+    stage_file(branding.BOOT_DIR + "/inter.pf2", branding.grub_font(), mode=0o644)
+    stage_file("/usr/share/licenses/balboa-inter/OFL.txt",
+               (ROOT / "assets/fonts/OFL.txt").read_bytes(), mode=0o644)
     if splash or definition["desktop"]:
-        files += "install -d -m 0755 /usr/share/fonts/balboa\n"
-        files += file_fragment("/usr/share/fonts/balboa/Inter-Regular.ttf", branding.FONT.read_bytes(), mode="0644")
-        files += file_fragment("/etc/fonts/conf.d/55-balboa-inter.conf",
-                               (ROOT / "guest/Inter.conf").read_text(), mode="0644")
+        stage_file("/usr/share/fonts/balboa/Inter-Regular.ttf", branding.FONT.read_bytes(), mode=0o644)
+        stage_file("/etc/fonts/conf.d/55-balboa-inter.conf",
+                   (ROOT / "guest/Inter.conf").read_text(), mode=0o644)
     if splash:
-        files += "install -d -m 0755 /usr/share/plymouth/themes/balboa\n"
         for name in ("balboa.plymouth", "balboa.script"):
-            files += file_fragment("/usr/share/plymouth/themes/balboa/" + name,
-                                   (ROOT / "guest/plymouth" / name).read_text(), mode="0644")
+            stage_file("/usr/share/plymouth/themes/balboa/" + name,
+                       (ROOT / "guest/plymouth" / name).read_text(), mode=0o644)
         for name, data in branding.plymouth_assets().items():
-            files += file_fragment("/usr/share/plymouth/themes/balboa/" + name, data, mode="0644")
+            stage_file("/usr/share/plymouth/themes/balboa/" + name, data, mode=0o644)
     if definition["desktop"]:
-        files += file_fragment("/etc/dnf/automatic.conf", (ROOT / "guest/dnf-automatic.conf").read_bytes(), mode="0644")
-        files += "install -d -m 0755 /etc/systemd/system/dnf-automatic.service.d\n"
-        files += file_fragment("/etc/systemd/system/dnf-automatic.service.d/60-balboa-guard.conf",
-                               (ROOT / "guest/dnf-automatic-guard.conf").read_bytes(), mode="0644")
-        files += "install -d -m 0755 /etc/firefox /etc/firefox/policies\n"
-        files += file_fragment("/etc/firefox/policies/policies.json",
-                               (ROOT / "guest/firefox-policies.json").read_text(), mode="0644")
-        files += f"install -d -m 0755 {branding.DESKTOP_DIR}\n"
+        stage_file("/etc/dnf/automatic.conf", (ROOT / "guest/dnf-automatic.conf").read_bytes(), mode=0o644)
+        stage_file("/etc/systemd/system/dnf-automatic.service.d/60-balboa-guard.conf",
+                   (ROOT / "guest/dnf-automatic-guard.conf").read_bytes(), mode=0o644)
+        stage_file("/etc/firefox/policies/policies.json",
+                   (ROOT / "guest/firefox-policies.json").read_text(), mode=0o644)
         for name in ("wallpaper.png", "login.png"):
-            files += file_fragment(branding.DESKTOP_DIR + "/" + name, assets[name], mode="0644")
+            stage_file(branding.DESKTOP_DIR + "/" + name, assets[name], mode=0o644)
     for name in ("balboa-harden.service", "balboa-audit.service"):
-        files += file_fragment("/etc/systemd/system/" + name, (ROOT / "guest" / name).read_text())
-    files += "install -d -m 0755 /etc/systemd/system/NetworkManager-wait-online.service.d\n"
-    files += file_fragment("/etc/systemd/system/NetworkManager-wait-online.service.d/60-balboa-timeout.conf",
-                           (ROOT / "guest/network-wait.conf").read_text(), mode="0644")
+        stage_file("/etc/systemd/system/" + name, (ROOT / "guest" / name).read_text())
+    stage_file("/etc/systemd/system/NetworkManager-wait-online.service.d/60-balboa-timeout.conf",
+               (ROOT / "guest/network-wait.conf").read_text(), mode=0o644)
     profile_id, tailoring_xml = tailoring(flavor, definition["profile"])
-    files += file_fragment("/etc/balboa/tailoring.xml", tailoring_xml)
+    stage_file("/etc/balboa/tailoring.xml", tailoring_xml)
     native = {"key_fingerprint": json.loads((ROOT / "sources.lock.json").read_text())["key_fingerprint"],
               "key_fingerprints": json.loads((ROOT / "sources.lock.json").read_text())["rpm_key_fingerprints"],
               "excluded_packages": definition["exclude"], "dvd_sha256": catalog()["dvd_sha256"]}
     if site.get("journal_upload", {}).get("client_key_file"):
         native["journal_client_key"] = site["journal_upload"]["client_key_file"]
-    files += file_fragment("/etc/balboa/native-policy.json", json.dumps(native))
+    stage_file("/etc/balboa/native-policy.json", json.dumps(native))
     catalog()
-    files += file_fragment("/etc/balboa/dvd-packages.json", CATALOG.read_bytes())
+    stage_file("/etc/balboa/dvd-packages.json", CATALOG.read_bytes())
     if lab_tls:
         if not lab:
             raise ValueError("Disposable TLS material requires lab mode.")
         if set(lab_tls) != {"ca.pem", "client.pem", "client.key"}:
             raise ValueError("Disposable TLS material requires the expected certificate and key files.")
-        files += "install -d -m 0755 /etc/pki/balboa\n"
         for name, content in lab_tls.items():
-            files += file_fragment("/etc/pki/balboa/" + name, content, mode="0600" if name.endswith(".key") else "0644")
+            stage_file("/etc/pki/balboa/" + name, content, mode=0o600 if name.endswith(".key") else 0o644)
     upload = site.get("journal_upload")
     if upload:
-        files += "install -d -m 0755 /etc/systemd/journal-upload.conf.d\n"
-        files += file_fragment("/etc/systemd/system/systemd-journal-upload.service.d/40-balboa-network.conf",
-                               (ROOT / "guest/journal-upload-network.conf").read_text(), mode="0644")
+        stage_file("/etc/systemd/system/systemd-journal-upload.service.d/40-balboa-network.conf",
+                   (ROOT / "guest/journal-upload-network.conf").read_text(), mode=0o644)
         lines = ["[Upload]", "URL=" + upload["url"]]
         names = {"trusted_certificate_file": "TrustedCertificateFile", "client_certificate_file": "ServerCertificateFile"}
         for field, name in names.items():
@@ -218,19 +210,19 @@ def render_text(flavor, site, disk, kind, lab=False, passphrase=None, disk_gb=No
             lines.append("TrustedCertificateFile=/etc/pki/tls/certs/ca-bundle.crt")
         if "client_key_file" in upload:
             lines.append("ServerKeyFile=" + upload["client_key_file"])
-            files += "getent group balboa-logs >/dev/null || groupadd --system balboa-logs\n"
-            files += file_fragment("/etc/systemd/system/systemd-journal-upload.service.d/60-balboa-credentials.conf",
-                                   "[Service]\nSupplementaryGroups=balboa-logs\n", mode="0644")
+            post_setup += "getent group balboa-logs >/dev/null || groupadd --system balboa-logs\n"
+            stage_file("/etc/systemd/system/systemd-journal-upload.service.d/60-balboa-credentials.conf",
+                       "[Service]\nSupplementaryGroups=balboa-logs\n", mode=0o644)
             if lab_tls:
-                files += "chgrp balboa-logs " + upload["client_key_file"] + "\nchmod 0640 " + upload["client_key_file"] + "\n"
+                post_setup += "chgrp balboa-logs " + upload["client_key_file"] + "\nchmod 0640 " + upload["client_key_file"] + "\n"
         else:
             lines += ["ServerKeyFile=-", "ServerCertificateFile=-"]
-        files += file_fragment("/etc/systemd/journal-upload.conf.d/60-balboa.conf", "\n".join(lines) + "\n", mode="0644")
+        stage_file("/etc/systemd/journal-upload.conf.d/60-balboa.conf", "\n".join(lines) + "\n", mode=0o644)
     conf = (f"FLAVOR={flavor}\nBASE_PROFILE={definition['profile']}\nPROFILE={profile_id}\nADMIN_USER={site['username']}\n"
             f"BOOT_SPLASH={'yes' if splash else 'no'}\nDESKTOP={'yes' if definition['desktop'] else 'no'}\nLAB={'yes' if lab else 'no'}\n"
             f"ROOT_PASSWORD_CONFIGURED={'yes' if site.get('root_password_hash') else 'no'}\n")
-    files += file_fragment("/etc/balboa/image.conf", conf)
-    source = "cdrom"
+    stage_file("/etc/balboa/image.conf", conf)
+    source = f"harddrive --partition={dvd_device()} --dir=/"
     values = {key.upper(): value for key, value in site.items()}
     values.update({"MODE": "cmdline" if lab else "text", "SOURCE": source, "DISK": disk,
                    "ROOTPW": "rootpw --iscrypted " + site["root_password_hash"],
@@ -243,7 +235,7 @@ def render_text(flavor, site, disk, kind, lab=False, passphrase=None, disk_gb=No
                    "DISPLAY": "xconfig --startxonboot" if definition["desktop"] else "skipx",
                    "PV_MIB": str(storage["pv_mib"]), "BOOT_MIB": str(storage["boot_mib"]),
                    "VOLUMES": kickstart_volumes(storage),
-                   "PACKAGES": "\n".join(packages + ["-" + p for p in definition["exclude"]]), "FILES": files})
+                   "PACKAGES": "\n".join(packages + ["-" + p for p in definition["exclude"]]), "POST_SETUP": post_setup})
     template = (ROOT / "kickstarts/base.ks.in").read_text()
     field = r"@@([A-Z_]+)@@"
     if set(re.findall(field, template)) - set(values) or "@@" in re.sub(field, "", template):
@@ -305,7 +297,9 @@ def render(args):
         for name, data in branding.plymouth_assets().items():
             (output / "branding/plymouth" / name).write_bytes(data)
     (output / "branding" / "inter.pf2").write_bytes(branding.grub_font())
-    text, definition = render_text(args.flavor, site, disk, args.kind, args.lab, passphrase, args.disk_size_gb, lab_tls)
+    (output / "install_files.py").write_bytes((ROOT / "guest/install_files.py").read_bytes())
+    text, definition = render_text(args.flavor, site, disk, args.kind, args.lab, passphrase, args.disk_size_gb,
+                                   lab_tls, files_dir=output / "balboa-files")
     if not args.lab:
         passphrase = site.get("luks_passphrase")
     path = output / "installation.ks"

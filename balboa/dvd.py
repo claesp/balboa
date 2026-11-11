@@ -11,6 +11,11 @@ ROOT = Path(__file__).resolve().parent.parent
 CATALOG = ROOT / "data/dvd-packages.json"
 
 
+def dvd_device():
+    label = json.loads((ROOT / "sources.lock.json").read_text())["images"]["dvd"]["volume_label"]
+    return f"/dev/disk/by-label/{label}"
+
+
 def catalog():
     record = json.loads(CATALOG.read_text())
     locked = json.loads((ROOT / "sources.lock.json").read_text())["images"]["dvd"]
