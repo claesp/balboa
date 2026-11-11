@@ -4,20 +4,6 @@ The repository separates source selection, flavor data, and common controls.
 The renderer combines these inputs into one Kickstart file.
 The ISO builder retains the official boot structure.
 
-## Write documentation
-
-Use the `asd-ste100` skill for all project documentation.
-Read the skill at `/home/clpe/.codex/skills/asd-ste100/SKILL.md` when that path is available.
-Apply the skill to procedures, reference documents, and test records.
-
-1. Read the source text before you revise it.
-2. Use active voice and one instruction per sentence.
-3. Limit instructions to 20 words per sentence.
-4. Limit descriptions to 25 words per sentence.
-5. Retain commands, paths, technical facts, and safety conditions.
-6. Use the linter from the skill on the revised documents.
-7. Examine each finding in context.
-
 ## Repository files
 
 Use these locations for changes.

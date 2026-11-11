@@ -10,11 +10,6 @@ Balboa uses official Rocky Linux media and packages.
 The source lock records the image digest and signing key.
 A digest is a value that identifies file contents.
 
-The project uses the `asd-ste100` skill for written documentation.
-The skill applies the writing rules of ASD-STE100. [Documentation procedure](maintenance.md#write-documentation)
-No tool guarantees ASD-STE100 compliance.
-The official dictionary is available at no cost. [ASD-STE100 downloads](https://www.asd-ste100.org/STE_downloads.html)
-
 ## Source acquisition
 
 Operate this command on the Linux build host.
