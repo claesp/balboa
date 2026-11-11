@@ -1,6 +1,7 @@
 """Do tests that require Rocky Linux tooling."""
 
 from pathlib import Path
+import hashlib
 import subprocess
 import sys
 import tempfile
@@ -72,6 +73,14 @@ def main():
             mode = 0o755 if executable else 0o600
             if files.get(path) != mode or (payload / path).read_bytes() != (guest / name).read_bytes():
                 raise ValueError('The Kickstart lacks the current initial package guard. Render it again.')
+        if 'usbguard' in parser.handler.packages.packageList:
+            config = Path('etc/usbguard/usbguard-daemon.conf')
+            rules = Path('etc/usbguard/rules.conf')
+            metadata = json.loads(options.kickstart.with_suffix('.json').read_text())
+            if (files.get(config) != 0o600 or files.get(rules) != 0o600
+                    or (payload / config).read_bytes() != (guest / config.name).read_bytes()
+                    or hashlib.sha256((payload / rules).read_bytes()).hexdigest() != metadata.get('usbguard_rules_sha256')):
+                raise ValueError('The Kickstart requires the current USBGuard configuration and rules. Render it again.')
         with tempfile.TemporaryDirectory() as temporary, dnf.Base() as base:
             directory = Path(temporary) / 'dvd'
             extract_metadata(options.dvd, directory)

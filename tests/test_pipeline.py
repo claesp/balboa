@@ -1,4 +1,5 @@
 import io
+import hashlib
 import json
 from pathlib import Path
 import shutil
@@ -10,12 +11,13 @@ import unittest
 import xml.etree.ElementTree as ET
 from unittest.mock import patch
 
-from balboa.cli import checksum_entry
+from balboa.cli import checksum_entry, parser
 from balboa.dvd import dvd_device
 from balboa.render import render_text, valid_site, read_site, render
 from balboa.vm import decode_evidence, extract_evidence, inspect_system, observe
 from balboa.storage import layout
 from balboa.policy import EXCLUSIONS, tailoring
+from balboa.usb import model_rules
 from guest.result_gate import assess, NS
 from guest.native_checks import validate_fingerprints, validate_key_access
 from guest.set_hostname import machine_hostname
@@ -77,6 +79,56 @@ class PipelineTests(unittest.TestCase):
             valid_site({**self.site, "username": "root"})
         with self.assertRaises(ValueError):
             valid_site({**self.site, "username": "operator"})
+
+    def test_usb_policy_requires_model_ids_and_exact_interfaces(self):
+        model = {"id": "1234:ABCD", "interfaces": ["03:01:01", "03:00:00"]}
+        self.assertEqual(model_rules({"keyboards": [model], "storage": []}),
+                         "allow id 1234:abcd with-interface equals { 03:00:00 03:01:01 }\nblock\n")
+        self.assertEqual(model_rules({}), "block\n")
+        invalid = (
+            None,
+            {"unknown": []},
+            {"keyboards": model},
+            {"keyboards": [{**model, "serial": "unit-1"}]},
+            {"keyboards": [{**model, "id": "1234:*"}]},
+            {"keyboards": [{**model, "interfaces": []}]},
+            {"keyboards": [{**model, "interfaces": ["03:*:*"]}]},
+            {"keyboards": [{**model, "interfaces": ["03:01:01\nallow"]}]},
+            {"storage": [model]},
+            {"other": [{**model, "interfaces": ["03:01:01", "08:06:50"]}]},
+        )
+        for value in invalid:
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                valid_site({**self.site, "usb_devices": value})
+
+    def test_usb_policy_is_staged_and_enabled_only_with_site_field(self):
+        import contextlib
+
+        default_files = self.root / "default-files"
+        site = {**self.site, "boot_splash": False}
+        default, _ = render_text("server", site, "vda", "dvd", files_dir=default_files)
+        self.assertNotIn("usbguard", default)
+        self.assertFalse((default_files / "etc/usbguard").exists())
+
+        site_file = self.root / "site.json"
+        site_file.write_text(json.dumps({**site, "usb_devices": {}}))
+        output = self.root / "rendered"
+        args = parser().parse_args(["render", "--flavor", "server", "--site", str(site_file),
+                                    "--disk", "vda", "--output", str(output)])
+        with contextlib.redirect_stdout(io.StringIO()):
+            render(args)
+        text = (output / "installation.ks").read_text()
+        self.assertIn("\nusbguard\nusbguard-selinux\n", text)
+        self.assertIn("\nsystemctl enable usbguard.service\n", text)
+        rules = output / "balboa-files/etc/usbguard/rules.conf"
+        config = output / "balboa-files/etc/usbguard/usbguard-daemon.conf"
+        self.assertEqual(rules.read_text(), "block\n")
+        metadata = json.loads((output / "installation.json").read_text())
+        self.assertEqual(metadata["usbguard_rules_sha256"], hashlib.sha256(rules.read_bytes()).hexdigest())
+        self.assertEqual(rules.stat().st_mode & 0o777, 0o600)
+        self.assertEqual(config.stat().st_mode & 0o777, 0o600)
+        self.assertIn("IPCAllowedUsers=root\n", config.read_text())
+        self.assertIn("AuditBackend=LinuxAudit\n", config.read_text())
 
     def test_journal_private_key_rejects_insecure_access(self):
         from types import SimpleNamespace

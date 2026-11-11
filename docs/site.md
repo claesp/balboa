@@ -62,6 +62,12 @@ The supported layout names appear in [the keyboard catalog](../data/keyboards.js
 The catalog records layouts from the official Rocky Linux `xkeyboard-config` package.
 The renderer and ISO preflight tests reject names outside that catalog.
 
+## USB devices
+
+The optional `usb_devices` field enables a USBGuard allowlist for approved USB models.
+Each entry identifies a model by its vendor ID, product ID, and USB interfaces.
+See [USB site configuration](device-access.md#site-configuration) for the supported categories and an example.
+
 ## Desktop languages and formats
 
 The laptop and workstation include English (United States) and Swedish (Svenska) by default.

@@ -16,6 +16,7 @@ from . import branding
 from .dvd import catalog, CATALOG, dvd_device, source_policy
 from .storage import kickstart_volumes, layout
 from .policy import EXCLUSIONS, tailoring
+from .usb import model_rules
 
 ROOT = Path(__file__).resolve().parent.parent
 LOCALE_PACKAGES = {"en_US.UTF-8": "glibc-langpack-en", "sv_SE.UTF-8": "glibc-langpack-sv"}
@@ -60,7 +61,7 @@ def valid_site(site):
         "language": r"[a-z]{2}_[A-Z]{2}\.UTF-8",
     }
     required = set(patterns) | {"root_password_hash"}
-    optional = {"journal_upload", "luks_passphrase", "branding_text", "boot_splash", "additional_locales"}
+    optional = {"journal_upload", "luks_passphrase", "branding_text", "boot_splash", "additional_locales", "usb_devices"}
     if not required <= set(site) or set(site) - required - optional:
         raise ValueError("The site file contains missing or unknown fields.")
     for key, pattern in patterns.items():
@@ -78,6 +79,8 @@ def valid_site(site):
         raise ValueError("The root console password requires a SHA512 crypt digest.")
     if site.get("luks_passphrase") is not None:
         validate_luks_passphrase(site["luks_passphrase"])
+    if "usb_devices" in site:
+        model_rules(site["usb_devices"])
     upload = site.get("journal_upload")
     if upload is not None:
         allowed = {"url", "trusted_certificate_file", "client_certificate_file", "client_key_file"}
@@ -146,6 +149,11 @@ def render_text(flavor, site, disk, kind, lab=False, passphrase=None, disk_gb=No
         target.chmod(mode)
 
     post_setup = ""
+    if "usb_devices" in site:
+        packages += ["usbguard", "usbguard-selinux"]
+        stage_file("/etc/usbguard/usbguard-daemon.conf", (ROOT / "guest/usbguard-daemon.conf").read_bytes())
+        stage_file("/etc/usbguard/rules.conf", model_rules(site["usb_devices"]))
+        post_setup += "systemctl enable usbguard.service\n"
     for name in ("baseline.sh", "branding.sh", "plymouth.sh", "harden.sh", "audit.sh", "failure.sh", "export.sh", "result_gate.py", "native_checks.py", "package_source.py", "set_hostname.py"):
         stage_file("/usr/local/libexec/balboa/" + name, (ROOT / "guest" / name).read_bytes(), 0o755)
     if flavor == "laptop":
@@ -317,5 +325,8 @@ def render(args):
                 "package_source_policy": source_policy(args.flavor),
                 "storage": layout(args.disk_size_gb, args.lab),
                 "kickstart_sha256": hashlib.sha256(text.encode()).hexdigest()}
+    if "usb_devices" in site:
+        rules = output / "balboa-files/etc/usbguard/rules.conf"
+        metadata["usbguard_rules_sha256"] = hashlib.sha256(rules.read_bytes()).hexdigest()
     path.with_suffix(".json").write_text(json.dumps(metadata, indent=2) + "\n")
     print(path)

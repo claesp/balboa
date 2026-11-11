@@ -495,3 +495,19 @@ One guest boots from virtual USB storage. The other guest boots from a virtual o
 Anaconda finds the locked DVD by its volume label in both tests.
 After boot, both guests contain the exact bytes at `/etc/testfile.conf`.
 The file has mode `0640`, root ownership, and the SELinux type `etc_t` in both guests.
+
+## Model-based USB access
+
+The November 11 USB test uses the USBGuard library from the locked Rocky Linux 10.2 DVD.
+The library accepts two keyboard units with different serial numbers and ports.
+It rejects a different model and a device that reports an extra interface.
+The Podman dependency tests pass for all three flavors. All 70 local tests pass.
+
+The QEMU laptop boots with USBGuard active and SELinux in enforcing mode.
+It authorizes the first keyboard at boot and the second keyboard after connection.
+It blocks a tablet that reports the same USB ID pair with a different interface.
+It also blocks a USB disk and denies a non-root request to list devices.
+Linux Audit records the device decisions.
+
+The lab CIS run stops at the journal upload rule because the test has no log receiver.
+The USB test completes on the installed system. [Input devices and USB access](device-access.md)

@@ -3,10 +3,10 @@
 ## Current image controls
 
 The locked Rocky Linux 10.2 DVD contains USBGuard 1.1.4 and its rule parser.
-The Balboa flavor definitions omit USBGuard.
+Balboa adds USBGuard and its SELinux policy when the site file includes `usb_devices`.
 The CIS Level 2 server and workstation profiles select rules that disable the USB storage driver and the Bluetooth service.
 Both profiles leave the USBGuard rule group unselected.
-These findings come from the security content on the locked DVD.
+Balboa enables USBGuard during installation when the site selects it.
 
 The USB storage rule controls the driver for all USB disks.
 The rule provides no per-device exception.
@@ -54,12 +54,12 @@ Record which USB entries appear for each device or dock.
 Include built-in devices that use USB, such as a USB camera or fingerprint reader, if present.
 The USB and input inventory depends on the actual machine variant. [Lenovo hardware review](lenovo-x1.md#hardware-differences)
 
-## Proposed USB policy
+## USB policy
 
 An allowlist permits only the devices that match its rules.
-Use USBGuard to apply the allowlist to USB devices present at service startup and to devices connected later.
-Block unmatched devices and restrict changes to the root account.
-Keep logs of authorization decisions in the Linux audit log. [USBGuard daemon configuration](https://github.com/USBGuard/usbguard/blob/usbguard-1.1.4/usbguard-daemon.conf.in)
+USBGuard applies the allowlist to USB devices present at service startup and to devices connected later.
+It blocks unmatched devices and restricts policy changes to the root account.
+It sends authorization decisions to the Linux audit log. [USBGuard daemon configuration](https://github.com/USBGuard/usbguard/blob/usbguard-1.1.4/usbguard-daemon.conf.in)
 
 Use the exact USB vendor and product ID pair to identify an approved model.
 A rule applies to all units that report that pair and the approved interfaces.
@@ -77,10 +77,11 @@ A programmable USB device can copy the values that another device reports.
 Two products with the same ID pair and interfaces also match the same rule.
 Device authentication against deliberate impersonation requires a separate cryptographic control. [Linux USB authorization](https://docs.kernel.org/usb/authorization.html)
 
-## Proposed site configuration
+## Site configuration
 
-This example proposes a `site.json` field for a later implementation.
-An actual policy requires values from the intended device and host.
+Add the optional `usb_devices` object to your site file before you render the image.
+Use the ID pair and interface codes from the approved model.
+The following example shows a keyboard model with two interfaces.
 
 ```json
 {
@@ -97,18 +98,24 @@ An actual policy requires values from the intended device and host.
 }
 ```
 
-The categories help administrators review the list.
-Each generated rule uses the exact ID pair and interfaces for one approved model.
-USBGuard also accepts a vendor-wide rule such as `1234:*`.
-The proposed configuration uses exact pairs to limit access to reviewed models.
-The proposed first policy leaves `storage` empty and retains the CIS USB storage rule.
-A policy that permits USB storage can identify an approved disk model by the same method.
+Use `audio`, `cameras`, `hubs`, `keyboards`, `network`, `other`, `pointers`, or `storage` as category names.
+The categories help administrators review the list. USBGuard matches the values in each entry.
+Each allow rule uses the exact ID pair and interfaces for one approved model.
+Omit `storage` or use an empty list for it.
+The renderer rejects models with a mass-storage interface because the CIS profile disables USB storage.
+
+An empty `usb_devices` object enables USBGuard and blocks all USB peripherals.
+If you omit `usb_devices`, the image uses the default package selection and the CIS driver rules.
 
 The keyboard entry corresponds to this USBGuard rule.
 
 ```text
-allow id 1234:5678 with-interface equals { 03:01:01 03:00:00 }
+allow id 1234:5678 with-interface equals { 03:00:00 03:01:01 }
 ```
+
+The render directory contains the rule file at `balboa-files/etc/usbguard/rules.conf`.
+The render and ISO manifests record its digest as `usbguard_rules_sha256`.
+To change the image policy, edit the site file and render again. [Build and installation](build.md)
 
 USBGuard can list attached devices and generate candidate rules without starting the service.
 If the reviewed USBGuard package is available on the inventory system, disconnect unrelated devices before you operate this command.
@@ -122,8 +129,12 @@ sudo usbguard generate-policy
 
 USBGuard applies its rules after its service starts.
 UEFI and the LUKS unlock prompt require separate boot tests.
-For protection from kernel startup, Linux supports a default USB authorization setting.
-Before you apply it, make sure that the approved unlock keyboard works during a cold boot. [Linux USB authorization](https://docs.kernel.org/usb/authorization.html)
+USBGuard starts after the installed system unlocks its root disk. [Linux USB authorization](https://docs.kernel.org/usb/authorization.html)
+
+If the allowlist blocks your only input device, use the GRUB administrator password to edit the boot entry for one boot.
+Add `systemd.mask=usbguard.service` to the kernel command line.
+After login, correct `/etc/usbguard/rules.conf` as root.
+Restart to apply the corrected rules. [systemd boot configuration](https://www.freedesktop.org/software/systemd/man/latest/systemd-debug-generator.html)
 
 USBGuard covers USB devices, including USB audio and storage.
 Built-in input, audio, and storage can also use buses such as I²C, PCIe, or NVMe.
