@@ -88,6 +88,7 @@ The [Linux user guide](https://download.lenovo.com/pccbbs/mobiles_pdf/x1_carbon_
 The selected CIS profile can restrict wireless networking, Bluetooth, USB access, and sleep behavior.
 The hardware review does not remove these security controls.
 Use an approved laptop policy decision before changes to those restrictions.
+Use the installed system to record the USB and input devices for this machine. [Input devices and USB access](device-access.md#inventory-the-installed-system)
 
 Use a wired USB-C adapter when the approved policy prevents wireless access.
 Do tests of disk unlock, lid close, suspend, resume, battery drain, and power profiles after hardening.

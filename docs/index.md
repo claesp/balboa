@@ -44,6 +44,7 @@ Balboa retains signature files in `cache/`.
 - Manage automatic security updates and repositories. [Desktop package updates](updates.md)
 - Review DVD restrictions and missing packages. [Package sources](package-sources.md)
 - Review hardware compatibility and physical acceptance requirements. [Lenovo X1 Carbon Gen 13](lenovo-x1.md)
+- Inventory input devices and review USB access. [Input devices and USB access](device-access.md)
 - Configure disk sizes, LVM, and mount restrictions. [Fixed storage](storage.md)
 - Configure hostnames, locales, recovery credentials, and central logging. [Site configuration](site.md)
 

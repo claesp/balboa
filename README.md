@@ -65,6 +65,7 @@ Use the document that matches your task.
 | Set the logo text and generate boot and desktop images | [Boot and desktop images](docs/branding.md) |
 | Select packages and hardware support | [Minimal flavors](docs/flavors.md) |
 | Examine X1 Carbon Gen 13 compatibility and hardware tests | [Lenovo X1 Carbon Gen 13](docs/lenovo-x1.md) |
+| Inventory input devices and review USB access | [Input devices and USB access](docs/device-access.md) |
 | Examine DVD package restrictions and review missing packages | [Package sources](docs/package-sources.md) |
 | Examine Firefox privacy policies and update behavior | [Firefox browser](docs/browser.md) |
 | Manage desktop security updates and repositories | [Desktop package updates](docs/updates.md) |
