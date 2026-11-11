@@ -33,6 +33,7 @@ Balboa retains signature files in `cache/`.
 - Do Podman and QEMU tests. [Testing](testing.md)
 - Install an ISO in QEMU and access the desktop. [Interactive QEMU tests](qemu.md)
 - Change sources and policies. [Maintenance](maintenance.md)
+- Improve technical writing with the `asd-ste100` skill. [Writing guidance](maintenance.md#write-documentation)
 - Remove obsolete output and recover disk space. [Clean generated files](clean.md)
 - Review completed tests and release evidence. [Verification record](verification.md)
 - Review the spinner, graphical disk prompt, and startup behavior. [Boot process](boot.md)

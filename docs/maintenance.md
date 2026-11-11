@@ -4,6 +4,14 @@ The repository separates source selection, flavor data, and common controls.
 The renderer combines these inputs into one Kickstart file.
 The ISO builder retains the official boot structure.
 
+## Write documentation
+
+Use the `asd-ste100` skill when you write or revise project documentation.
+Read `/home/clpe/.codex/skills/asd-ste100/SKILL.md` when that path is available.
+Use the skill to make instructions and explanations clear.
+Preserve technical facts, commands, paths, and safety conditions.
+Use findings from the linter to guide your review.
+
 ## Repository files
 
 Use these locations for changes.
