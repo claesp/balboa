@@ -61,11 +61,11 @@ Use USBGuard to apply the allowlist to USB devices present at service startup an
 Block unmatched devices and restrict changes to the root account.
 Keep logs of authorization decisions in the Linux audit log. [USBGuard daemon configuration](https://github.com/USBGuard/usbguard/blob/usbguard-1.1.4/usbguard-daemon.conf.in)
 
-Use the vendor and product IDs to identify the model.
-Use the serial number to identify a device when it reports a unique serial.
-If a device has no unique serial, add its USBGuard hash and bind the rule to a tested USB port.
-A USBGuard hash is a value calculated from data that the device reports.
-Repeat the inventory after a restart to make sure that the chosen identifiers remain stable. [USBGuard rule language](https://usbguard.github.io/documentation/rule-language)
+Use the exact USB vendor and product ID pair to identify an approved model.
+A rule applies to all units that report that pair and the approved interfaces.
+The same rule applies when you move a unit to another port or replace it with the same model.
+Some hardware revisions or operating modes report a different pair or interface set.
+Record a separate entry for each approved combination. [USBGuard rule language](https://usbguard.github.io/documentation/rule-language)
 
 Match the full set of USB interfaces.
 An interface is a function that a USB device exposes.
@@ -74,7 +74,7 @@ An exact match blocks a device that presents an extra interface.
 Allow the approved hub and its required child devices when a dock exposes several USB devices. [USBGuard rule language](https://usbguard.github.io/documentation/rule-language)
 
 A programmable USB device can copy the values that another device reports.
-These rules control access by reported identity and port.
+Two products with the same ID pair and interfaces also match the same rule.
 Device authentication against deliberate impersonation requires a separate cryptographic control. [Linux USB authorization](https://docs.kernel.org/usb/authorization.html)
 
 ## Proposed site configuration
@@ -88,7 +88,6 @@ An actual policy requires values from the intended device and host.
     "keyboards": [
       {
         "id": "1234:5678",
-        "serial": "EXAMPLE-001",
         "interfaces": ["03:01:01", "03:00:00"]
       }
     ],
@@ -99,13 +98,21 @@ An actual policy requires values from the intended device and host.
 ```
 
 The categories help administrators review the list.
-Each generated rule uses the exact identity and interfaces for one approved device.
+Each generated rule uses the exact ID pair and interfaces for one approved model.
+USBGuard also accepts a vendor-wide rule such as `1234:*`.
+The proposed configuration uses exact pairs to limit access to reviewed models.
 The proposed first policy leaves `storage` empty and retains the CIS USB storage rule.
-A policy that permits USB storage can identify an approved disk by the same method.
+A policy that permits USB storage can identify an approved disk model by the same method.
+
+The keyboard entry corresponds to this USBGuard rule.
+
+```text
+allow id 1234:5678 with-interface equals { 03:01:01 03:00:00 }
+```
 
 USBGuard can list attached devices and generate candidate rules without starting the service.
 If the reviewed USBGuard package is available on the inventory system, disconnect unrelated devices before you operate this command.
-Review each candidate rule before you use it. [Red Hat USBGuard guidance](https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/10/html/security_hardening/protecting-systems-against-intrusive-usb-devices)
+Record only the ID pair and interfaces for each approved model. [Red Hat USBGuard guidance](https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/10/html/security_hardening/protecting-systems-against-intrusive-usb-devices)
 
 ```sh
 sudo usbguard generate-policy
@@ -127,11 +134,11 @@ The platform controls Thunderbolt PCIe access through authorization and DMA prot
 
 1. Cold boot with only the built-in devices and unlock the disk.
 2. Test the keyboard, touchpad, and TrackPoint at login.
-3. Test the approved USB devices in their assigned ports and through their approved dock.
+3. Test two units of each approved model across the ports and docks that users need.
 4. Connect an unapproved USB keyboard and disk. Use `sudo usbguard list-devices --blocked` to find both devices.
 5. Restart, suspend, and resume. Repeat the authorization tests.
 6. Make sure that the USBGuard policy records each decision in the audit log.
 7. Make sure that an administrator can restore access with the approved recovery procedure.
 
-The DVD rule parser accepts example rules for a keyboard with two interfaces and a device tied to a port.
+The DVD rule parser accepts the model rule for the keyboard with two interfaces.
 These parser tests establish the rule syntax. Device tests require the physical X1 and its approved devices.
