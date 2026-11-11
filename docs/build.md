@@ -4,7 +4,7 @@ The build host requires an x86_64 Linux system.
 Podman supplies Rocky Linux tools in a separate environment.
 QEMU supplies a virtual machine for installation tests.
 
-The host requires these tools:
+The host requires the following tools.
 
 - Python 3.11 or later
 - ImageMagick with SVG support and Fontconfig
@@ -47,9 +47,8 @@ cp examples/site.json site.json
 chmod 600 site.json
 ```
 
-Create a password digest and an SSH key on the build host.
-The first command prompts for the account password.
-The second command prompts for the private key passphrase.
+Create the password digest on the build host. The first command prompts for the account password.
+Create the SSH key on the same host. The second command prompts for the private key passphrase.
 
 ```sh
 openssl passwd -6
@@ -60,11 +59,13 @@ Put the password digest in `password_hash` in `site.json`.
 Put the root console password digest in `root_password_hash` in `site.json`.
 Both password fields can contain the same digest.
 Retain the root password in the approved recovery vault.
+
 Put the public key contents in `ssh_public_key` in `site.json`.
 Set the installation hostname and locale fields in `site.json`.
 See [Hostname](site.md#hostname) for the name that the installed system uses.
 Use an XKB layout identifier for `keyboard`, such as `se` for Swedish or `us` for US English.
 See [Keyboard and language](site.md#keyboard-and-language) for the supported names and locale fields.
+
 Use a separate administrator name that does not identify a system account.
 The renderer rejects reserved names such as `root` and `operator`.
 
@@ -74,7 +75,7 @@ Its password protects changes to boot commands.
 Create the bootloader password digest with Podman on the build host.
 The command uses the official Rocky Linux 10 image.
 It installs `grub2-tools-minimal` inside a disposable container.
-The command requires network access to obtain the image and package.
+The command requires network access to fetch the image and package.
 
 ```sh
 podman run --rm -it docker.io/rockylinux/rockylinux:10 \
@@ -85,7 +86,7 @@ podman run --rm -it docker.io/rockylinux/rockylinux:10 \
 Enter the password twice when the utility prompts.
 The utility uses 100000 iterations to create the digest.
 
-On a Rocky Linux host with `grub2-tools-minimal` installed, operate the utility directly:
+On a Rocky Linux host with `grub2-tools-minimal` installed, operate the utility directly.
 
 ```sh
 grub2-mkpasswd-pbkdf2 --iteration-count=100000
@@ -120,11 +121,14 @@ See [Boot and desktop images](branding.md) for image locations and the command o
 Production renders enable Plymouth by default.
 Use `--no-boot-splash` for a text boot without the Plymouth packages.
 
-For workstations, replace `server` with `workstation` and use a new output directory.
-For laptops, replace `server` with `laptop` and use a new output directory.
+For workstations, replace `server` with `workstation`.
+For laptops, replace `server` with `laptop`.
+Use a new output directory for either flavor.
 The renderer rejects an existing output directory that contains files.
 The ISO command requires a successful offline DVD dependency test.
-After a keyboard change, render a new Kickstart and rebuild the ISO.
+
+After a keyboard change, render a new Kickstart.
+Build a new ISO from that Kickstart.
 Previously generated images retain the previous keyboard configuration.
 
 The disk parameter also accepts `disk/by-id/` identifiers.
@@ -133,7 +137,7 @@ The installer can access only the selected disk through Kickstart storage comman
 
 Without a `luks_passphrase` site value, enter a unique LUKS2 passphrase through the local console during installation.
 The default production Kickstart contains no disk passphrase.
-The installer stops after installation through the `poweroff` command.
+At the end of installation, the installer uses `poweroff` to stop the system.
 
 Start the installed system to apply the security profile.
 After the automatic restart, unlock the disk again.
@@ -149,14 +153,14 @@ The value must contain the actual plaintext passphrase, with 5 to 128 printable 
 The renderer rejects embedded line breaks and control characters.
 Omit the field or use `null` to request interactive entry during installation.
 
-Generate a new passphrase on the build host:
+Generate a new passphrase on the build host.
 
 ```sh
 openssl rand -base64 48
 ```
 
 Put the result in the `luks_passphrase` field.
-Replace the example placeholder with the actual value:
+Replace the placeholder in the example with the actual value.
 
 ```json
 "luks_passphrase": "REPLACE_WITH_A_PLAINTEXT_LUKS_PASSPHRASE"
@@ -170,7 +174,7 @@ Protect the site file with mode `0600`.
 The renderer rejects group or other access to a site file that contains a LUKS passphrase.
 
 Prepare the site file through the preceding procedure before these commands.
-Fetch the DVD source on the build host before the image build:
+Before the image build, fetch the DVD source on the build host.
 
 ```sh
 python3 -m balboa fetch --kind dvd
@@ -204,7 +208,7 @@ Do an installation test of each selected DVD flavor.
 Apply approved updates before release.
 The locked DVD contains SCAP Security Guide 0.1.80 with a known account-shell assessment defect.
 The defect can report a valid administrator shell as invalid.
-The [upstream correction](https://github.com/ComplianceAsCode/content/pull/14751) fixes the final account entry in `/etc/passwd`.
+The upstream correction changes how the assessment reads the final account entry in `/etc/passwd`. [Upstream correction](https://github.com/ComplianceAsCode/content/pull/14751)
 
 After successful initial hardening, apply the approved security content update at the installed system console.
 This command requires network access to the official Rocky repositories.
@@ -216,7 +220,8 @@ sudo dnf -y upgrade scap-security-guide openscap-scanner
 
 Use [Updated security content](security.md#updated-security-content) for approved remediation after a security content update.
 Updated security content can introduce new controls that require approved remediation before the assessment passes.
-Review those changes and refresh the AIDE database through the site maintenance process.
+Review the changes through the site maintenance process.
+Refresh the AIDE database through the same process.
 The release test must pass with the updated content.
 
 ## Boot interfaces
@@ -226,7 +231,7 @@ It uses `mkksiso --skip-mkefiboot` because the container cannot mount the embedd
 UEFI boot from a USB device requires `--usb-uefi` or the native build mode.
 Rootless Podman operates without host administrator privileges.
 
-For UEFI USB media, use the rootless Podman build on the build host:
+For UEFI USB media, use the rootless Podman build on the build host.
 
 ```sh
 python3 -m balboa iso build/production-server/installation.ks --usb-uefi --output build/balboa-server-usb.iso
@@ -235,6 +240,7 @@ python3 -m balboa iso build/production-server/installation.ks --usb-uefi --outpu
 The tool container requires `mtools` for this mode.
 If an older tool image lacks that package, rebuild it with `python3 -m balboa tools`.
 The builder uses the official Lorax program and replaces its firmware image update procedure.
+
 A FAT image contains the UEFI partition filesystem.
 Mtools changes the GRUB configuration within a copy of the original FAT image without a mount.
 The builder places that image in the appended UEFI partition.
@@ -258,8 +264,8 @@ Secure Boot still requires a separate firmware test.
 
 ## Artifact records
 
-Each ISO has a JSON manifest and a package list for the tools.
-It also has a `.dvd-packages.json` report for the offline dependency selection.
+The ISO build creates a JSON manifest and a package list for the tools.
+It also creates a `.dvd-packages.json` report for the offline package selection.
 The manifest records the source digest, Kickstart digest, flavor, and security profile.
 It also records the local tool image identity and source lock digest.
 The installed system records its package list and datastream digest separately.
@@ -270,7 +276,7 @@ Lab artifacts contain disposable disk passphrases.
 Production artifacts also contain a disk passphrase when the site file supplies `luks_passphrase`.
 The ISO builder sets the image file mode to `0600`.
 
-The build is auditable but not byte reproducible.
+The build records support audits. Separate builds can produce different bytes.
 The target installation uses fixed DVD package versions.
 Online repositories for build tools and later installed system updates change over time.
 For controlled releases, retain the tool package records, update records, and their repository metadata.

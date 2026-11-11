@@ -3,20 +3,23 @@
 Every flavor starts with mandatory packages from the `core` group.
 The installer excludes weak dependencies and default group additions.
 A weak dependency is an optional package relationship.
-All flavors exclude the Postfix mail agent, Nautilus, and the QEMU guest agent.
-The test workflow uses serial channels and does not require the QEMU guest agent.
-The installed DNF configuration also disables weak dependencies and retains the flavor exclusions.
+All flavors exclude the Postfix mail agent and the QEMU guest agent.
+The server also excludes Files (Nautilus).
+Tests use serial channels to communicate with the guest.
+
+The DNF configuration disables weak dependencies on the installed system.
+It also retains the package exclusions for the flavor.
 
 The common security tools support the required hardening and assessment workflow.
 They include OpenSCAP, AIDE, audit, SELinux support, and the firewall.
-They remain installed so that the operator can assess later changes.
+The operator can use the installed tools to assess later changes.
 The selected security content requires an rsyslog file permission rule even when journald supplies the logs.
-The images retain that package but mask its service.
+The images retain the rsyslog package and mask its service.
 Only journald supplies active system logging.
 
 ## Server
 
-The server adds OpenSSHD to the common minimum.
+The server adds the OpenSSH server to the common packages.
 It excludes GNOME, wireless management, and Bluetooth services.
 It also excludes printing and local service discovery.
 
@@ -35,6 +38,7 @@ The workstation adds explicit packages for a minimal GNOME session.
 It includes GDM, the desktop shell, the session manager, and the control center.
 It also includes a terminal and key storage support.
 It explicitly includes `pipewire-pulseaudio` and `alsa-ucm` for desktop audio.
+
 DNF Automatic installs security updates after the first assessment.
 The DNF configuration plugin controls package repositories.
 The workstation includes Files (Nautilus) for file selection and search settings.
@@ -51,10 +55,11 @@ It does not include office applications or printing services by default.
 
 ## Laptop
 
-The laptop adds the same minimal GNOME session.
+The laptop adds the same minimal GNOME session and Files (Nautilus).
 It uses the same DNF update and repository tools as the workstation.
-It enables stable LVFS for firmware and the approved RPM sources after hardening.
+After hardening, the laptop enables the stable LVFS firmware source and the approved RPM repositories.
 See [Laptop package and firmware sources](package-sources.md#laptop-package-and-firmware-sources) for the source list and update procedure.
+
 It also adds wireless networking, Bluetooth, device firmware, and power management.
 The image includes `tuned-ppd` for GNOME power controls.
 Explicit firmware packages support common Intel, Atheros, Broadcom, and Realtek wireless devices.
@@ -72,8 +77,8 @@ Physical hardware tests and approved policy decisions remain necessary.
 
 ## Package review
 
-The November 8 review removes the QEMU guest agent.
-It also excludes NVIDIA firmware from the default Intel and AMD graphics selection.
+The November 8 review removed the QEMU guest agent.
+It also excluded NVIDIA firmware from the default Intel and AMD graphics selection.
 The workstation excludes Intel wireless firmware because its role uses wired networking.
 
 The laptop retains wireless firmware, Bluetooth dependencies, and power management.

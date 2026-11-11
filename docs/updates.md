@@ -8,7 +8,7 @@ The desktop uses DNF for package search, installation, and repository control.
 The timer uses the Rocky schedule at 06:00 local time with up to one hour of delay.
 It can start a missed run after the system starts again.
 The service waits for initial hardening and the first assessment to finish.
-The service also waits for release of the DVD repository restriction.
+The service also waits until initial hardening releases the DVD repository restriction.
 The update configuration leaves restarts under operator control.
 
 ## Operate the update timer
@@ -24,8 +24,8 @@ sudo journalctl -u dnf-automatic.service
 sudo dnf history info last
 ```
 
-To pause future runs, disable the timer on the installed desktop.
-To resume future runs, enable it again.
+To pause future updates, disable the timer on the installed desktop.
+To resume updates, enable the timer.
 
 ```sh
 sudo systemctl disable --now dnf-automatic.timer
@@ -36,10 +36,10 @@ Use `sudoedit /etc/dnf/automatic.conf` to change the update policy.
 Set `apply_updates = no` to download security updates for review.
 Use `sudo systemctl edit dnf-automatic.timer` to change the schedule.
 
-The security filter uses advisory data supplied by the repositories.
+The security filter uses advisory data from the repositories.
 Use `sudo dnf upgrade --refresh` to review all pending updates, including releases without advisories.
 Review the proposed transaction before you accept it.
-Follow [Maintenance](maintenance.md#update-installed-systems) for later security assessments.
+Do later security assessments through the maintenance procedure. [Maintenance](maintenance.md#update-installed-systems)
 
 ## Control repositories
 
@@ -59,10 +59,11 @@ Use `fwupdmgr get-updates` on the laptop to see available firmware updates.
 
 ## Migrate an existing desktop
 
-Open a terminal in a copy of this repository on the installed Balboa desktop.
-Complete initial hardening and the first assessment before you start.
-If the desktop already uses DNF Automatic, examine its configuration before you replace it.
-Install the tools and configure the security update policy.
+1. Open a terminal in a copy of this repository on the installed Balboa desktop.
+2. Complete initial hardening and the first assessment.
+3. If the desktop already uses DNF Automatic, examine its configuration before you replace it.
+4. Install the tools.
+5. Configure the security update policy.
 
 ```sh
 sudo dnf --disablerepo='*' --enablerepo=baseos,appstream install dnf-automatic dnf-plugins-core
@@ -78,7 +79,8 @@ The `--noautoremove` option retains other dependencies, including `fwupd` on the
 sudo dnf remove --noautoremove gnome-software PackageKit PackageKit-glib flatpak flatpak-libs flatpak-selinux flatpak-session-helper
 ```
 
-After removal completes, reload the service configuration and start the timer.
+After removal completes, reload the service configuration.
+Start the timer.
 
 ```sh
 sudo systemctl daemon-reload

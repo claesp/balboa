@@ -27,7 +27,7 @@ python3 -m balboa render --flavor laptop --lab --disk-size-gb 24 --output build/
 ```
 
 For production, omit `--disk-size-gb` to retain the 128 GB policy.
-If a different size receives approval, supply that size explicitly.
+If the site approves a different size, supply that size explicitly.
 The renderer does not derive sizes from the physical disk capacity.
 
 The installer rejects a disk that cannot contain the fixed partitions.
@@ -61,8 +61,8 @@ The variable data filesystem permits package installation scripts and applicatio
 
 The installer creates the required BIOS or UEFI boot partitions outside LVM.
 The `/boot` filesystem also remains outside LVM.
-It has a fixed 2048 MiB size with `nodev,nosuid,noexec` restrictions.
-Boot filesystems remain unencrypted so that firmware and GRUB can start the system.
+The `/boot` filesystem has a fixed size of 2048 MiB and uses `nodev,nosuid,noexec`.
+The installer leaves the boot filesystems unencrypted so that firmware and GRUB can start the system.
 
 ## Allocation method
 
@@ -78,7 +78,7 @@ LVM rounds requested sizes to its allocation units.
 The reserved overhead permits this rounding without enlarging the physical volume.
 The manifest records requested sizes in MiB.
 
-The default requested allocations use these sizes:
+The table shows the default requested sizes.
 
 | Logical volume | Production 128 GB, MiB | Lab 32 GB, MiB |
 | --- | --- | --- |
@@ -113,6 +113,8 @@ If the status remains incomplete, examine `/tmp/storage.log` and `/tmp/anaconda.
 Retain the fixed Kickstart partition scheme when you examine the installation destination.
 Automatic partitioning through the installer menu can replace that scheme.
 
-After a correction, render a new Kickstart and rebuild the ISO.
-Use a new QEMU work directory for the next installation attempt.
-The [Anaconda storage status code](https://github.com/rhinstaller/anaconda/blob/rhel-10/pyanaconda/ui/tui/spokes/storage.py) defines this status.
+1. After a correction, render a new Kickstart.
+2. Build a new ISO from that Kickstart.
+3. Use a new QEMU work directory for the next installation attempt.
+
+Anaconda defines the storage status. [Anaconda storage status code](https://github.com/rhinstaller/anaconda/blob/rhel-10/pyanaconda/ui/tui/spokes/storage.py)

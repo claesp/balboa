@@ -4,9 +4,23 @@ The repository separates source selection, flavor data, and common controls.
 The renderer combines these inputs into one Kickstart file.
 The ISO builder retains the official boot structure.
 
+## Write documentation
+
+Use the `asd-ste100` skill for all project documentation.
+Read the skill at `/home/clpe/.codex/skills/asd-ste100/SKILL.md` when that path is available.
+Apply the skill to procedures, reference documents, and test records.
+
+1. Read the source text before you revise it.
+2. Use active voice and one instruction per sentence.
+3. Limit instructions to 20 words per sentence.
+4. Limit descriptions to 25 words per sentence.
+5. Retain commands, paths, technical facts, and safety conditions.
+6. Use the linter from the skill on the revised documents.
+7. Examine each finding in context.
+
 ## Repository files
 
-Use these locations for changes:
+Use these locations for changes.
 
 - `sources.lock.json` contains official media identities and the container digest.
 - `flavors/` contains package selections and security profile identifiers.
@@ -40,21 +54,22 @@ After a change, use a new output directory.
 The renderer does not update an existing artifact.
 Previously generated media still contains the previous programs and policy.
 
-Before a release commit, do these tasks:
+Do these tasks before a release commit.
 
 1. Do the local tests with `make test`.
 2. Render each affected flavor into a new directory.
 3. Do the Podman tests for each generated Kickstart.
 4. Build each affected ISO from authenticated media.
-5. Do the QEMU installation and assessment for each affected flavor.
-6. Examine the manual controls and physical hardware requirements.
-7. Record the results and limitations in `docs/`.
-8. Commit the source changes without generated credentials or images.
+5. Install each affected flavor in QEMU.
+6. Assess each installation in QEMU.
+7. Examine the manual controls and physical hardware requirements.
+8. Record the results and limitations in `docs/`.
+9. Commit the source changes without generated credentials or images.
 
 ## Update official sources
 
 Rocky supports the current minor release of each major version.
-The lock deliberately prevents an automatic media version change.
+The source lock prevents automatic changes to the media version.
 The installed package repositories still receive updates.
 
 Before a source change, examine the official Rocky release notes.
@@ -67,8 +82,10 @@ An unreviewed key change removes the authentication boundary.
 
 Record the new ISO filename and digest in `sources.lock.json`.
 Record the official container digest in the same file.
-Rebuild the tools and do all flavor tests after the source change.
-For a DVD change, regenerate and review `data/dvd-packages.json` through [Package sources](package-sources.md).
+After a source change, rebuild the tools.
+Do the tests for all flavors.
+If the DVD changes, regenerate `data/dvd-packages.json`.
+Review the new inventory. [Package sources](package-sources.md)
 
 For keyboard catalog updates, use `rules/base.xml` from the official Rocky `xkeyboard-config` package.
 Retain layout identifiers only when the package supplies their files under `/usr/share/X11/xkb/symbols/`.

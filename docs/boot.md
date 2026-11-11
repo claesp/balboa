@@ -2,7 +2,7 @@
 
 Production images use Plymouth for the graphical Linux boot.
 Plymouth is a program that shows graphics during startup.
-The normal lab mode retains a text boot for automatic serial unlock.
+The default lab mode uses text output so that the test can unlock the disk through the serial console.
 
 GRUB shows the generated photo before Linux starts.
 Plymouth fits the full image to the screen so that the photo credit stays visible.
@@ -21,7 +21,7 @@ The production default is `true`.
 Use `false` for serial-only systems or a server without graphics.
 
 Operate render commands from the repository root on the build host.
-Use `--no-boot-splash` to override the site value and omit the Plymouth packages.
+Use `--no-boot-splash` to override the site value. This flag omits the Plymouth packages.
 Use `--boot-splash` to enable graphics explicitly.
 
 ```sh
@@ -45,9 +45,11 @@ python3 -m balboa iso build/laptop-graphical-lab/installation.ks --output build/
 python3 scripts/start-qemu.py --iso build/laptop-graphical-lab.iso --workdir build/qemu-graphical
 ```
 
-After installation, boot the installed disk with the same VM directory.
-Read the disposable passphrase from the restricted `lab-secrets.json` file at the local build host.
-Enter that passphrase in the QEMU window.
+After installation, unlock the disk in QEMU.
+
+1. Boot the installed disk with the same VM directory.
+2. Read the disposable passphrase from the restricted `lab-secrets.json` file on the build host.
+3. Enter the passphrase in the QEMU window.
 
 ```sh
 python3 scripts/start-qemu.py --boot --workdir build/qemu-graphical
@@ -59,15 +61,16 @@ The GRUB menu waits two seconds instead of five seconds.
 GRUB skips discovery of other operating systems when it creates its configuration.
 The fixed images do not require that discovery step.
 
-The first boot still applies the full security policy and creates the AIDE database.
-Initial hardening uses the installed DVD package versions and denies IP traffic from the hardening service.
-See [Package sources](package-sources.md) for the initial repository restriction and later updates.
-The next boot still assesses that policy after a restart.
+On first boot, the system applies the full security policy and creates the AIDE database.
+Initial hardening uses the installed DVD package versions.
+The service configuration denies IP traffic from the hardening service.
+After restart, the system assesses the policy.
 These initial tasks take longer than an ordinary boot.
+[Package sources](package-sources.md)
 
 After successful remediation, the hardening service disables its automatic startup before AIDE initialization.
 This avoids a network dependency from that service on later boots.
-The audit service still performs its required assessment after restart.
+After restart, the audit service does the required assessment.
 
 NetworkManager waits at most five seconds for its startup attempt during boot.
 An offline timeout completes that wait without a failed unit.
@@ -79,9 +82,8 @@ Journal upload retains its vendor unit and security directives.
 Its service retries failed uploads after 15 seconds.
 Persistent journald storage retains the local events while the receiver is unavailable.
 
-The earlier journal unit generator is removed because generated units prevent normal service enabling during DVD security remediation.
-The timeout drop-in changes only the network startup wait command and its result handling.
-The [NetworkManager manual](https://networkmanager.dev/docs/api/latest/nm-online.html) describes the startup timeout.
+Balboa removed the journal unit generator because its units prevented systemd from enabling the service normally during DVD security remediation.
+The drop-in changes only the command that waits for the network at startup and how systemd handles its result. [NetworkManager manual](https://networkmanager.dev/docs/api/latest/nm-online.html)
 
 The images retain the LUKS key derivation cost.
 They retain the required security services and firmware support.

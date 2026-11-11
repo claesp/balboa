@@ -1,13 +1,13 @@
 # Balboa
 
 Balboa creates custom Rocky Linux 10 installation images for servers, workstations, and laptops.
-Kickstart is a file that controls an installation.
+A Kickstart file controls an installation.
 An ISO is a file that contains installation media.
 
 The project customizes official Rocky Linux media with Kickstart files.
 Installation and initial hardening use only packages from the locked DVD.
 Later updates use the configured Rocky repositories and the laptop EPEL repository.
-The [source lock](sources.lock.json) fixes the media version, image identity, and signing key.
+The source lock fixes the media version, image identity, and signing key. [Source lock](sources.lock.json)
 Podman supplies build tools and installation syntax tests.
 QEMU supplies disposable virtual machines for installation and security tests.
 
@@ -22,7 +22,7 @@ The installer excludes weak dependencies and default group additions.
 
 | Flavor | Contents |
 | --- | --- |
-| Server | Boot essentials, OpenSSHD, and common security tools |
+| Server | Boot essentials, the OpenSSH server, and common security tools |
 | Workstation | The common minimum, a minimal GNOME desktop, automatic security updates, and Firefox |
 | Laptop | The minimal GNOME desktop, automatic security updates, Firefox, wireless networking, Bluetooth, firmware, and power management |
 
@@ -38,22 +38,24 @@ Test images use 32 GB by default with the same partition scheme.
 
 LVM divides storage into separate logical volumes.
 All persistent filesystems except boot filesystems use encrypted LVM storage.
-Separate temporary, log, and audit filesystems use mount restrictions where applicable.
+The layout uses separate filesystems for temporary files, system logs, and audit logs.
+These filesystems use mount restrictions where applicable.
 See [Fixed storage](docs/storage.md) for allocation sizes and configuration.
 
-The images use CIS Level 2 based security profiles with two declared policy differences.
+The images use security profiles based on CIS Level 2.
+The profiles contain two declared policy differences.
 OpenSCAP applies the selected profile and assesses the installed system after a restart.
 The project does not claim CIS certification or conformance to an unmodified benchmark.
 
 Production builds require a root console password.
 SSH root login remains disabled.
 The optional `luks_passphrase` site field supplies the disk encryption key during unattended installation.
-Central logging values remain deployment-time configuration.
+Set the values for central logging at deployment.
 See [Security policy](docs/security.md) and [Site configuration](docs/site.md) before production release.
 
 ## Documentation
 
-Use these documents for each project task:
+Use the document that matches your task.
 
 | Task | Document |
 | --- | --- |
@@ -76,13 +78,13 @@ Use these documents for each project task:
 
 ## Repository contents
 
-The [flavor definitions](flavors/) select packages for each system role.
-The [Kickstart template](kickstarts/base.ks.in) and [storage policy](storage/layout.json) define the common installation.
-The [guest programs](guest/) apply and assess the security policy.
+The flavor definitions select packages for each system role. [Flavor definitions](flavors/)
+The Kickstart template and storage policy define the common installation. [Kickstart template](kickstarts/base.ks.in) · [Storage policy](storage/layout.json)
+The guest programs apply and assess the security policy. [Guest programs](guest/)
 
-The [build commands](balboa/) create media and operate test machines.
-The [container definitions](containers/) supply build tools and the local test log receiver.
-The [tests](tests/) assess input restrictions, image contents, and security results.
+The build commands create media and operate test machines. [Build commands](balboa/)
+The container definitions supply build tools and the local test log receiver. [Container definitions](containers/)
+The tests assess input restrictions, image contents, and security results. [Tests](tests/)
 
 Use lab media only in disposable virtual machines.
 Lab media contains disposable passwords and disk encryption secrets.

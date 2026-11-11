@@ -11,7 +11,8 @@ The render and ISO commands use DVD media by default.
 They reject the network boot ISO as an installation source.
 The Kickstart selects `cdrom` and defines no additional repositories.
 
-The package preflight operates in a Podman container with network access disabled.
+The package preflight is the dependency test before an ISO build.
+It operates in a Podman container without network access.
 It reads BaseOS and AppStream metadata from the authenticated DVD.
 It resolves the mandatory core group, explicit packages, kernel, dependencies, and exclusions against those repositories only.
 
@@ -19,7 +20,7 @@ Every ISO build requires this package preflight.
 The test also requires the current initial hardening guard in the Kickstart.
 Old Kickstart files require a new render before an ISO build.
 
-Operate these commands from the repository root on the build host:
+Operate the following commands from the repository root on the build host.
 
 ```sh
 python3 -m balboa fetch --kind dvd
@@ -44,8 +45,8 @@ Any package outside that inventory stops initial hardening and requires review.
 
 The desktop update service waits for initial hardening and the first assessment to finish.
 The hardening service restores the normal repository configuration before it creates the AIDE database.
-It assesses the package inventory again before it marks initial hardening complete.
-It then restarts the system for the assessment.
+The hardening service assesses the package inventory again before it marks initial hardening complete.
+The service then restarts the system for the assessment.
 
 If initial hardening fails, the failure handler restores the repository restriction.
 Examine the retained evidence before corrections.
@@ -65,11 +66,11 @@ EPEL means Extra Packages for Enterprise Linux.
 The laptop uses the stable Fedora EPEL 10 repository with RPM signature checks.
 The signing-key assessment permits the approved EPEL key only in the later package policy.
 
-The approved EPEL certificate has fingerprint `7D8D15CBFC4E62688591FB2633D98517E37ED158`.
+The approved EPEL certificate has the fingerprint `7D8D15CBFC4E62688591FB2633D98517E37ED158`.
 The certificate and stable repository configuration come from `epel-release-10-7.el10_1.noarch` in Rocky Extras.
 The project prepares those files directly and keeps the package installation on the DVD.
-The [Fedora signing-key list](https://fedoraproject.org/security/#current-openpgp-certificates) identifies the EPEL 10 key.
-The [Rocky repository guide](https://docs.rockylinux.org/teams/rel_eng/repo/) describes the additional Rocky sources.
+Fedora lists the EPEL 10 signing key. [Fedora signing-key list](https://fedoraproject.org/security/#current-openpgp-certificates)
+Rocky documents the additional repositories. [Rocky repository guide](https://docs.rockylinux.org/teams/rel_eng/repo/)
 
 The stable Linux Vendor Firmware Service (LVFS) remote supplies firmware metadata through `fwupd`.
 The image enables that remote for the laptop.
@@ -112,7 +113,7 @@ The builder does not download a missing package from another repository.
 It reports that the package requires review and stops.
 No off-DVD exception is currently approved for installation or initial hardening.
 
-For a package review, record these facts in `docs/`:
+For a package review, record the following facts in `docs/`.
 
 - Package name, version, architecture, and required hardware feature
 - Reason that the DVD package selection cannot supply the feature
@@ -133,7 +134,8 @@ The file `data/dvd-packages.json` records the exact DVD package identities.
 Each identity contains the name, epoch, version, release, and architecture.
 
 After a reviewed DVD source change, fetch its authenticated media on the build host.
-Regenerate the inventory with `xorriso` available on that host:
+Make sure that the build host has `xorriso`.
+Regenerate the inventory with the following command.
 
 ```sh
 python3 scripts/catalog-dvd.py cache/Rocky-10.2-x86_64-dvd1.iso
@@ -141,4 +143,5 @@ python3 scripts/catalog-dvd.py cache/Rocky-10.2-x86_64-dvd1.iso
 
 Replace the filename with the reviewed filename in `sources.lock.json`.
 The script requires a matching DVD digest before it writes the inventory.
-Review the inventory diff and repeat all flavor preflights and installation tests before release.
+Before release, review the inventory changes.
+Repeat the package and installation tests for all flavors.

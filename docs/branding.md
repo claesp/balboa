@@ -17,7 +17,7 @@ Set the optional `branding_text` field in your site JSON file.
 The default text is `Balboa`.
 The field accepts 1 to 64 printable characters without line breaks.
 
-Use this field in your complete site file:
+Use the following field in your complete site file.
 
 ```json
 "branding_text": "Example Systems"
@@ -37,7 +37,7 @@ The renderer treats the text as literal image text.
 
 ## Generated files
 
-The render output contains these three images:
+The render command creates three images.
 
 | File under the output directory | Size | Installed purpose |
 | --- | --- | --- |
@@ -54,7 +54,7 @@ GDM shows the name over its own background in the logo area.
 The name sits near the lower right of the wallpaper.
 The boot image and wallpaper show the photo credit in the lower left corner.
 
-If graphical boot is enabled, the render also writes `branding/plymouth/spinner.png` and `branding/plymouth/entry.png`.
+If you enable graphical boot, the render command also writes `branding/plymouth/spinner.png` and `branding/plymouth/entry.png`.
 Plymouth uses these images for the rotating ring and the disk password field.
 The ring and the name use the same light foreground color.
 
@@ -85,7 +85,7 @@ The custom image occupies the logo banner area.
 
 The login configuration retains the security database and the vendor defaults.
 The images do not change the account password policy.
-The LUKS passphrase accepts 5 to 128 printable characters.
+The renderer accepts a LUKS passphrase of 5 to 128 printable characters.
 
 ## Source assets and fonts
 
@@ -113,6 +113,5 @@ Firmware screens, text consoles, and terminal grids retain their native or fixed
 
 ## References
 
-The [GRUB manual](https://www.gnu.org/software/grub/manual/grub/html_node/Simple-configuration.html) describes graphics output and themes.
-The [Red Hat GNOME guide](https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/10/html/administering_rhel_by_using_the_gnome_desktop_environment/customizing-desktop-appearance-and-branding) describes wallpaper defaults and the GDM logo.
-These references describe the interfaces that Balboa uses.
+GRUB uses a theme to control graphics output. [GRUB manual](https://www.gnu.org/software/grub/manual/grub/html_node/Simple-configuration.html)
+The Red Hat guide describes the GNOME wallpaper defaults and the GDM logo. [Red Hat GNOME guide](https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/10/html/administering_rhel_by_using_the_gnome_desktop_environment/customizing-desktop-appearance-and-branding)

@@ -7,12 +7,13 @@ For an ISO installation in a QEMU window, use [Interactive QEMU tests](qemu.md).
 
 ## Cleanup after every test
 
-Clean up on the build host after each test session, even if a test fails.
-Save the reports, logs, and screenshots that you need before cleanup.
-Stop the virtual machines, containers, and log collectors for the test.
-Preview the files to remove before you apply cleanup.
-Remove disposable ISOs, virtual disks, credentials, and temporary files from the test.
-Keep the current installer and any virtual machines that you still use. [Clean selected outputs](clean.md#selected-outputs)
+Do this procedure on the build host after each test session, even if a test fails.
+
+1. Save the reports, logs, and screenshots that you need.
+2. Stop the virtual machines, containers, and log collectors for the test.
+3. Preview the files to remove.
+4. Remove the disposable ISOs, virtual disks, credentials, and temporary files.
+5. Keep the current installer and any virtual machines that you still use. [Clean selected outputs](clean.md#selected-outputs)
 
 ## Local tests
 
@@ -65,7 +66,7 @@ An optical boot result alone does not establish USB boot behavior.
 
 ## Post-installation test
 
-The baseline test does the post-installation script in a disposable container.
+The baseline test operates the post-installation script in a disposable container.
 It installs the explicit packages with weak dependencies disabled.
 The container does not assess kernel or storage controls.
 For desktop flavors, the test reads wallpaper and login image values through GNOME.
@@ -104,7 +105,8 @@ The TLS listener offers HTTP/1.1 to avoid a systemd 257 upload buffer error with
 
 QEMU reaches host loopback through its isolated network address `10.0.2.2`.
 The lab renderer uses `https://10.0.2.2:19532` by default.
-For another port, set `--port` on the collector and `--lab-logging-url` on the renderer.
+For another port, set `--port` on the collector.
+Set the matching `--lab-logging-url` on the renderer.
 
 Use separate output directories for workstation and laptop renders.
 Each lab render creates a random root console password in its restricted secrets file.
@@ -153,7 +155,7 @@ It also requires the fixed disk size, LVM mount sources, mount restrictions, and
 A failed rule causes the final command to return a nonzero status.
 
 The collector retains journals under `build/lab-logging/logs/` on the host.
-After the VM tests, stop the owned collector with this command:
+After the VM tests, stop the collector for this test session with the following command.
 
 ```sh
 python3 -m balboa lab-logger --directory build/lab-logging --stop
@@ -177,7 +179,7 @@ If the host uses different paths, set `--ovmf-code` and `--ovmf-vars`.
 For CPU emulation without KVM, add `--accel tcg`.
 The emulated CPU uses the QEMU `max` model for x86-64-v3 instructions.
 
-Do the installation and assessment for these combinations:
+Install and assess each of the following combinations.
 
 - Server with BIOS and UEFI
 - Workstation with BIOS and UEFI
@@ -201,6 +203,7 @@ The status `Kickstart insufficient` means that storage configuration is incomple
 It does not specifically report insufficient disk capacity.
 See [Storage problems](storage.md#storage-problems) for the installation diagnostics.
 
-After installation, do the two system boots with manual disk unlock.
-Examine the reports through the installed system console.
+1. After installation, boot the system twice.
+2. Unlock the disk manually at each boot.
+3. Examine the reports through the installed system console.
 Production media does not automatically export reports or stop after assessment.

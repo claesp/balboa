@@ -29,20 +29,21 @@ The project does not substitute a RHEL datastream when Rocky content is absent.
 The packaged Rocky datastream contains a rule that expects Red Hat signing keys.
 Balboa replaces `ensure_redhat_gpgkey_installed` with a native Rocky signing-key assessment.
 That assessment requires the pinned Rocky fingerprint in both the key file and RPM database.
+
 Sequoia reads the key formats that Rocky Linux 10.2 supplies.
 The source lock also lists the permitted fingerprints for the distribution key bundle.
 The native assessment rejects additional keys outside that list.
-The first boot imports only the approved key bundle after the fingerprint assessment.
+On first boot, the system imports only the approved key bundle after the fingerprint assessment.
 
 Balboa also excludes `package_postfix_installed` to obey the requested minimal package scope.
 All flavors forbid the Postfix package through a separate package assessment.
 This mail agent exclusion is a declared policy deviation that requires review before release.
 
-The remaining selected CIS rules stay enabled.
+The tailoring file keeps the remaining selected CIS rules enabled.
 The ISO manifest records both profile differences.
 The reports include the native assessments before remediation, after remediation, and after restart.
 
-These images use CIS Level 2 based profiles with declared differences.
+These images use profiles based on CIS Level 2 with declared differences.
 They do not claim conformance to an unmodified CIS profile.
 The security owner must examine the differences against the applicable Rocky benchmark.
 
@@ -54,6 +55,7 @@ The firmware and boot partitions remain unencrypted.
 
 Separate filesystems contain `/home`, `/tmp`, `/var`, `/var/tmp`, `/var/log`, and `/var/log/audit`.
 Temporary filesystems reject direct program execution through the `noexec` mount flag.
+
 Each image requires a root console password digest.
 The selected recovery policy requires this password for local recovery.
 The renderer rejects an absent or malformed root digest.
@@ -72,7 +74,7 @@ SELinux operates in enforcing mode.
 Audit rules record account changes and administrator policy changes.
 The initial firewall uses the `drop` zone.
 
-The images disable sshd at installation.
+The installer disables sshd.
 The server enables public key SSH access after successful remediation.
 SSH configuration permits public key authentication and rejects root login.
 
@@ -84,7 +86,7 @@ The selected CIS profile can disable wireless interfaces.
 ## Installation sequence
 
 The installer applies the common controls through `%post`.
-The first boot applies the selected OpenSCAP remediation.
+On first boot, the system applies the selected OpenSCAP remediation.
 Remediation is an automatic change that addresses a security rule.
 
 The system initializes the AIDE database after remediation.
@@ -92,14 +94,15 @@ AIDE records file contents for later comparison.
 The system then requests a restart.
 
 The AIDE baseline includes the completed SSH and firewall configuration.
-It excludes the changing assessment files under `/var/lib/balboa/`.
-The security programs and their configuration remain within the normal AIDE coverage.
+The AIDE baseline excludes the changing assessment files under `/var/lib/balboa/`.
+AIDE still covers the security programs and their configuration.
 
 After restart, the system does an assessment without remediation.
 The assessment retains XML results and an HTML report.
 The system records its packages and the datastream digest.
 
-The assessment fails for failed, unknown, untested, erroneous, or unreassessed fixed rules.
+The assessment fails if a rule fails, reports an unknown result, reports an error, or lacks a test.
+The assessment also fails if it contains a fixed rule without a subsequent assessment.
 The remediation stage permits unresolved findings but rejects scanner errors.
 The remediation marker does not indicate conformance.
 
@@ -109,8 +112,9 @@ The administrator can use the local console to examine results.
 The administrator controls each later firewall change.
 
 The images use persistent journald logs and mask the rsyslog service.
-The rsyslog package remains installed because the selected content requires its file permission configuration.
+The installer keeps the rsyslog package because the selected content requires its file permission configuration.
 The images apply that configuration without an active rsyslog daemon.
+
 The images mask the journal receiver service and socket.
 Central logging uses the journal upload service with HTTPS.
 The site supplies its receiver address and certificate paths.
@@ -122,7 +126,7 @@ The site must test delivery and retention before release.
 
 ## Release conditions
 
-Before release, do these tasks for each flavor and hardware class:
+Before release, do the following tasks for each flavor and hardware class.
 
 1. Make sure that the installed system passes the automatic assessment.
 2. Compare each selected rule with the applicable Rocky Linux CIS benchmark.
@@ -143,7 +147,7 @@ The fixed log sizes require a capacity review for production workloads.
 
 ## Laptop decisions
 
-The [X1 Carbon Gen 13 review](lenovo-x1.md) records the selected Lenovo platform and its remaining physical tests.
+The review records the selected Lenovo platform and the physical tests that it requires. [X1 Carbon Gen 13 review](lenovo-x1.md)
 
 CIS Level 2 can conflict with wireless access and removable media.
 The laptop flavor does not silently remove those controls.
@@ -154,7 +158,7 @@ Keep the original profile assessment as evidence of the deviation.
 Do not describe a modified profile as full CIS Level 2 conformance.
 
 Suspend, resume, docking, camera access, and wireless operation require physical hardware tests.
-Hibernation is not supported by the default swap allocation.
+The default swap allocation cannot support hibernation.
 TPM enrollment and automatic disk unlock require a separate site design.
 
 ## Operation and recovery
@@ -186,6 +190,7 @@ Use a unique passphrase for each production installation.
 Keep recovery material in the approved site vault.
 The default production procedure requests the passphrase at installation.
 For unattended installation, the optional `luks_passphrase` site field supplies the plaintext encryption key.
+
 The site JSON file, Kickstart, and ISO then contain that key.
 Restrict access to these artifacts because they contain the plaintext installation key.
 Do not put passphrases in kernel arguments.
@@ -198,8 +203,9 @@ Do not remove the `remediated` marker after package updates.
 Initial hardening rejects installed package versions outside the DVD inventory.
 
 Retain the previous evidence before this procedure.
-Review the updated controls and approve their remediation through the site maintenance process.
-Operate these commands at the installed system console after the approved security content update:
+Review the updated controls.
+Approve their remediation through the site maintenance process.
+After the approved security content update, operate the following commands at the installed system console.
 
 ```sh
 sudo bash <<'SH'
@@ -223,7 +229,7 @@ The OpenSCAP command accepts status 2 because remediation can require another as
 The desktop command retains readable dconf databases after remediation.
 Examine the updated remediation report before the next commands.
 
-After approval of the resulting changes, refresh the AIDE database at the installed system console:
+After the site approves the resulting changes, refresh the AIDE database at the installed system console.
 
 ```sh
 sudo aide --init

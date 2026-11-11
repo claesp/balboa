@@ -3,20 +3,21 @@
 Start at the [project overview](../README.md) for the main documentation links.
 
 Balboa creates custom Rocky Linux 10 installation images.
-Kickstart is a file that controls an installation.
+A Kickstart file controls an installation.
 An ISO is a file that contains installation media.
 
 Balboa uses official Rocky Linux media and packages.
 The source lock records the image digest and signing key.
 A digest is a value that identifies file contents.
 
-The documentation uses Simplified Technical English.
+The project uses the `asd-ste100` skill for written documentation.
+The skill applies the writing rules of ASD-STE100. [Documentation procedure](maintenance.md#write-documentation)
 No tool guarantees ASD-STE100 compliance.
-The official dictionary is free at [asd-ste100.org](https://asd-ste100.org/).
+The official dictionary is available at no cost. [ASD-STE100 downloads](https://www.asd-ste100.org/STE_downloads.html)
 
 ## Source acquisition
 
-Operate these commands on the Linux build host.
+Operate this command on the Linux build host.
 The host requires Python 3.11 or later, curl, and GnuPG.
 The command authenticates the signed digest before it accepts the ISO.
 
@@ -32,23 +33,23 @@ Balboa retains signature files in `cache/`.
 
 ## Project procedures
 
-[Build and installation](build.md) describes production media and source selection.
-[Security policy](security.md) describes the controls and release conditions.
-[Testing](testing.md) describes Podman and QEMU tests.
-[Interactive QEMU tests](qemu.md) describes the script for ISO installation and desktop access.
-[Maintenance](maintenance.md) describes source and policy changes.
-[Clean generated files](clean.md) describes output removal and disk space recovery.
-[Verification record](verification.md) records completed tests and release evidence.
-[Boot process](boot.md) describes the spinner, graphical disk prompt, and startup choices.
-[Boot and desktop images](branding.md) describes the generated logo, text, and images.
-[Minimal flavors](flavors.md) describes package selection and hardware services.
-[Desktop Settings](desktop-settings.md) describes the GNOME defaults and file selection.
-[Firefox browser](browser.md) describes browser privacy policies and package updates.
-[Desktop package updates](updates.md) describes automatic security updates and repository control.
-[Package sources](package-sources.md) defines DVD restrictions and the review procedure for missing packages.
-[Lenovo X1 Carbon Gen 13](lenovo-x1.md) records hardware compatibility findings and physical acceptance requirements.
-[Fixed storage](storage.md) describes disk sizes, LVM, and mount restrictions.
-[Site configuration](site.md) describes hostnames, locale support, recovery credentials, and central logging.
+- Build production media from the selected sources. [Build and installation](build.md)
+- Review the controls and release conditions. [Security policy](security.md)
+- Do Podman and QEMU tests. [Testing](testing.md)
+- Install an ISO in QEMU and access the desktop. [Interactive QEMU tests](qemu.md)
+- Change sources and policies. [Maintenance](maintenance.md)
+- Remove obsolete output and recover disk space. [Clean generated files](clean.md)
+- Review completed tests and release evidence. [Verification record](verification.md)
+- Review the spinner, graphical disk prompt, and startup behavior. [Boot process](boot.md)
+- Generate images with the configured name. [Boot and desktop images](branding.md)
+- Select packages and hardware services. [Minimal flavors](flavors.md)
+- Review GNOME defaults and file selection. [Desktop Settings](desktop-settings.md)
+- Review Firefox privacy policies and package updates. [Firefox browser](browser.md)
+- Manage automatic security updates and repositories. [Desktop package updates](updates.md)
+- Review DVD restrictions and missing packages. [Package sources](package-sources.md)
+- Review hardware compatibility and physical acceptance requirements. [Lenovo X1 Carbon Gen 13](lenovo-x1.md)
+- Configure disk sizes, LVM, and mount restrictions. [Fixed storage](storage.md)
+- Configure hostnames, locales, recovery credentials, and central logging. [Site configuration](site.md)
 
 ## Source references
 

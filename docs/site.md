@@ -15,7 +15,8 @@ After package installation, `dmidecode` reads the serial number from the machine
 The installer uses the system serial number first and tries the chassis serial number next.
 It skips placeholder values such as `Not Specified`.
 
-The installed name starts with `pc-` on a laptop or workstation and `srv-` on a server.
+The installed name starts with `pc-` on a laptop or workstation.
+The installed name starts with `srv-` on a server.
 The installer converts the serial to lowercase and replaces groups of other characters with hyphens.
 It limits the full name to 63 characters.
 If the firmware gives no usable serial number, the installer uses nine random lowercase letters.
@@ -45,12 +46,12 @@ The `keyboard` field requires a supported XKB layout identifier.
 The renderer uses that value in `keyboard --xlayouts` in Kickstart.
 
 Use `se` for Swedish or `us` for US English.
-The value `sv` is a language code and is not a keyboard layout.
-The console keymap name `se-latin1` is not an XKB layout identifier.
+The renderer rejects the language code `sv` as a keyboard layout.
+It also rejects the console keymap name `se-latin1` as an XKB layout.
 
 A locale defines a language and regional formats.
 The `language` field sets the default locale independently from the keyboard layout.
-For a Swedish keyboard and Swedish language, use these site fields:
+For a Swedish keyboard and Swedish language, use the following site fields.
 
 ```json
 "keyboard": "se",
@@ -74,7 +75,7 @@ Use an empty list to omit the extra locale packages.
 The `language` field still sets the default locale and requests its usual installer support.
 For the server, `additional_locales` defaults to an empty list.
 
-For example, use US English as the default and add Swedish support explicitly:
+The example sets US English as the default and adds Swedish support.
 
 ```json
 "language": "en_US.UTF-8",
@@ -83,11 +84,13 @@ For example, use US English as the default and add Swedish support explicitly:
 
 ### Select separate language and formats
 
-Open **Settings → System → Region & Language** on the installed desktop.
-Under **Your Account**, select **English (United States)** in **Language**.
-Select **Sweden** in **Formats**.
-If Sweden does not appear in the first list, expand the list and search for Sweden.
-Log out and log in again to apply the changes. [GNOME format help](https://help.gnome.org/gnome-help/session-formats.html)
+1. Open Settings → System → Region & Language on the installed desktop.
+2. Under Your Account, select English (United States) in Language.
+3. If Sweden does not appear in the first list in Formats, expand the list.
+4. If you expand the list, search for Sweden.
+5. Select Sweden in Formats.
+6. Select Log Out.
+7. Start a new session to apply the changes. [GNOME format help](https://help.gnome.org/gnome-help/session-formats.html)
 
 ### Add Swedish to an existing desktop
 
@@ -98,7 +101,8 @@ The command installs the locale packages from Rocky BaseOS.
 sudo dnf --disablerepo='*' --enablerepo=baseos install glibc-langpack-en glibc-langpack-sv
 ```
 
-Close and reopen GNOME Settings after installation.
+After installation, close GNOME Settings.
+Open GNOME Settings again.
 
 ## Disk encryption
 
@@ -117,7 +121,7 @@ Use [Unattended disk encryption](build.md#unattended-disk-encryption) for the bu
 
 ## Image text
 
-The optional `branding_text` field supplies the text below the generated logo.
+The optional `branding_text` field supplies the name in the generated images.
 The default value is `Balboa`.
 The field accepts 1 to 64 printable characters without line breaks.
 
@@ -142,7 +146,7 @@ A journal receiver accepts structured system log events.
 TLS encrypts network traffic and authenticates certificates.
 The optional `journal_upload` object supplies an HTTPS receiver address and certificate paths.
 
-Add this object to the site file for an authenticated journal receiver:
+For an authenticated journal receiver, add the following object to the site file.
 
 ```json
 "journal_upload": {
@@ -157,10 +161,13 @@ Replace the example address with the site receiver address.
 Use a receiver that accepts the systemd journal upload protocol.
 The renderer rejects HTTP, URL credentials, and certificate paths outside `/etc/pki/`.
 
-The certificate fields contain paths, not certificate contents.
+Enter the paths to the certificates in the certificate fields.
 Provision the certificates and private key through the approved site procedure before the first boot.
+
 Use mode `0644` for public certificates.
-Give the private key root ownership, group `balboa-logs`, and mode `0640`.
+Set the private key owner to root.
+Set the private key group to `balboa-logs`.
+Set the private key mode to `0640`.
 Use mode `0755` for directories that contain public certificates.
 
 If the site file names a client key, the installer creates the `balboa-logs` group.
@@ -187,6 +194,7 @@ The lab procedure embeds only disposable test keys.
 If the receiver requires no client certificate, omit both client fields.
 Without a trusted certificate path, the service uses the installed system CA collection.
 The selected receiver must still authenticate through a valid certificate.
+
 For systemd 257, restrict the receiver to HTTP/1.1 to avoid the observed HTTP/2 upload buffer error.
 The local test procedure uses journal port `19532`, which the installed SELinux policy permits.
 For another receiver port, review the SELinux port policy before deployment.
@@ -206,7 +214,8 @@ The security assessment requires completed logging configuration before release.
 Use the local console for the following procedure.
 The example uses client certificates and the standard paths from this document.
 
-Create the group and configuration directories on the installed system:
+Create the group on the installed system.
+Create the configuration directories on the same system.
 
 ```sh
 getent group balboa-logs >/dev/null || sudo groupadd --system balboa-logs
@@ -225,13 +234,13 @@ ServerCertificateFile=/etc/pki/balboa/client.pem
 ServerKeyFile=/etc/pki/balboa/client.key
 ```
 
-Create the service file with this command:
+Create the service file with the following command.
 
 ```sh
 sudoedit /etc/systemd/system/systemd-journal-upload.service.d/60-balboa-credentials.conf
 ```
 
-Put this content in the service file:
+Put the following content in the service file.
 
 ```ini
 [Service]
@@ -240,7 +249,7 @@ SupplementaryGroups=balboa-logs
 
 Provision the CA certificate, client certificate, and private key through approved site storage.
 Apply the access modes and SELinux labels from the preceding section.
-Add the key path to the native policy through this command:
+Add the key path to the native policy with the following command.
 
 ```sh
 sudo python3 - <<'PY'
@@ -258,7 +267,8 @@ sudo systemctl daemon-reload
 sudo systemctl enable systemd-journal-upload.service
 ```
 
-Do the delivery test and repeat remediation through the following procedure.
+Do the delivery test.
+Repeat remediation through the following procedure.
 
 ## Delivery test
 

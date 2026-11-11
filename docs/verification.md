@@ -1,8 +1,8 @@
 # Verification record
 
-The test session covers November 7 and November 8, 2026.
-The build host uses x86_64 Linux with QEMU, Podman, and KVM.
-The tests use authenticated Rocky Linux 10.2 boot and DVD media.
+The initial test session covered November 7 and November 8, 2026.
+The build host used x86_64 Linux with QEMU, Podman, and KVM.
+The tests used authenticated Rocky Linux 10.2 boot and DVD media.
 
 ## Completed tests
 
@@ -11,9 +11,11 @@ It includes site input restrictions, report assessment, guest archive restrictio
 The suite also tests the serial unlock procedure and installer error detection.
 The local suite accepts matching root console and administrator password digests for all three flavors.
 Six launcher tests cover disk preservation, manifest constraints, boot reuse, and private UEFI variable files.
-Keyboard tests reject `sv` and `se-latin1` where XKB layout identifiers are required.
+
+Keyboard tests reject `sv` and `se-latin1` when the input requires an XKB layout identifier.
 The Swedish layout `se` renders correctly for all three flavors.
 The Rocky container preflight accepts `se` and rejects `sv` before ISO creation.
+
 Encryption tests cover site JSON passphrases, quoted characters, file permissions, and rejected control characters.
 The tests require the passphrase to remain absent from manifests and console output.
 The LUKS boundary tests accept five characters and reject four characters.
@@ -37,10 +39,11 @@ The scripts use a separate administrator identity and explicit audit and SELinux
 
 ## Automatic assessment results
 
-The following results describe the earlier acceptance images under `build/acceptance/`.
-Each image completes remediation, AIDE initialization, and an automatic restart.
-The next boot does an assessment without remediation.
-The final results contain no failed, erroneous, unknown, or untested selected rules.
+These results describe the earlier acceptance images under `build/acceptance/`.
+Each image completed remediation and AIDE initialization.
+Each system restarted automatically.
+On the next boot, each system did an assessment without remediation.
+The final results showed no failed, erroneous, unknown, or untested selected rules.
 
 | Flavor | Firmware | Passing rules | Not applicable | Findings |
 | --- | --- | --- | --- | --- |
@@ -77,7 +80,8 @@ The lab images use disposable root passwords and a local authenticated receiver.
 
 The interactive script passes QEMU device initialization for BIOS and UEFI.
 Each firmware mode accepts the `vda`, `sda`, and `nvme0n1` disk devices.
-The startup tests use the laptop DVD ISO, temporary disks, a headless display, and paused guest CPUs.
+The startup tests use the laptop DVD ISO and temporary disks.
+The tests pause the guest CPUs and operate without a window.
 
 These startup tests do not replace the full installation and security assessments recorded in this document.
 The GTK window requires examination in a graphical host session.
@@ -95,7 +99,8 @@ Anaconda marks Installation Destination as completed before partition creation.
 The installer creates EFI and boot partitions, an encrypted physical volume, and all eight specified logical volumes.
 
 The installer requests no LUKS setup passphrase.
-Its post-installation programs report `BALBOA_INSTALL_COMPLETE`, and the machine powers off.
+Its post-installation programs report `BALBOA_INSTALL_COMPLETE`.
+The machine then powers off.
 The fixed 128 GB allocation requires no size correction.
 
 This test uses the official DVD kernel and initrd with serial console arguments.
@@ -106,7 +111,7 @@ The private test artifacts remain under `build/luks-storage-check/`.
 The serial log is `vm-nvme-uefi/install.log` under that directory.
 The file `installation-summary.json` records the result without the passphrase.
 
-The disposable DVD ISO has this SHA256 digest:
+The following SHA256 digest identifies the disposable DVD ISO.
 
 ```text
 76a95dc318565c1a8be67419b02e4949802ee513384c8a5aab3ce05444af5d04
@@ -124,13 +129,13 @@ Each installed assessment records its own content digest and package list.
 
 The implementation revision is `f9bc899`.
 These earlier images precede the generated branding assets.
-All three assessments use this datastream SHA256 digest:
+All three assessments use the datastream with the following SHA256 digest.
 
 ```text
 4985708fcfe92ff3a4ddb88ac1d6a9a3ec887c545032d7a7d592669670917213
 ```
 
-These SHA256 digests identify the exact disposable ISO files from this session:
+The table shows the SHA256 digest for each disposable ISO from this session.
 
 | Flavor | ISO digest |
 | --- | --- |
@@ -145,7 +150,7 @@ Replace `FLAVOR` with `server`, `workstation`, or `laptop`.
 Each ISO has a matching JSON manifest and tool package list.
 
 The generated Kickstart files and disposable secrets remain under `build/acceptance/FLAVOR/`.
-The collected results use these directories:
+The collected results use the following directories.
 
 - `build/acceptance/vm-server-bios/collected/evidence/`
 - `build/acceptance/vm-workstation-uefi/collected/evidence/`
@@ -170,7 +175,6 @@ Production media still requires tests with actual site credentials and deployed 
 
 The remaining DVD flavor and firmware combinations require separate installation tests.
 UEFI USB boot and Secure Boot require separate tests.
-The other BIOS and UEFI flavor combinations require separate tests.
 Laptop wireless operation, suspend, resume, and docking require physical hardware tests.
 Site controls require an approved benchmark review and retained evidence.
 
@@ -185,8 +189,8 @@ The workstation and laptop tests read the wallpaper and login values through GNO
 The tests also require GDM to read the login image.
 
 The branded laptop completes a DVD installation on a fixed 32 GB UEFI virtual disk.
-A QEMU screenshot shows the generated boot image behind the installed GRUB menu.
-Another screenshot shows the custom login banner and `Powered by Rocky Linux`.
+One QEMU screenshot shows the generated boot image behind the installed GRUB menu.
+Another screenshot shows the custom login banner with the text `Powered by Rocky Linux`.
 
 A separate server test uses a five-character LUKS passphrase from site JSON.
 The official Rocky DVD installer creates the encrypted LVM layout without an encryption setup prompt.
@@ -218,7 +222,7 @@ The updated results reside in `build/branding-test/vm-laptop-uefi/collected/evid
 The boot, login, and desktop screenshots remain in that VM directory.
 The branding implementation revision is `6368828`.
 
-The branded laptop DVD ISO has this SHA256 digest:
+The following SHA256 digest identifies the branded laptop DVD ISO.
 
 ```text
 8241deb0ca20d5cc6c09084ef9223b188f518cec116c1fbcf38397f4771c4d3e
@@ -278,8 +282,10 @@ The service retains its vendor restrictions and retries failed connections after
 
 An earlier ordinary boot records 3.625 seconds in userspace.
 A graphical boot records 3.951 seconds in userspace before the disconnected-network test.
-The graphical interface adds some work and does not show a userspace speed improvement in this comparison.
-Manual LUKS entry changes the early boot duration, so these tests do not establish a total startup speed improvement.
+The graphical interface adds work in userspace.
+The recorded userspace time was longer with the graphical interface.
+Manual LUKS entry changes the early boot duration.
+The tests therefore do not establish an improvement in total startup time.
 
 With the virtual network link disconnected, the final image reaches its graphical target in 9.011 seconds of userspace time.
 The previous dependency leaves the same offline test waiting for network readiness.
@@ -334,7 +340,8 @@ The server output contains none of the three applications or the browser policy.
 The Firefox runtime assessment passes with the DVD package version 140.10.2 and the repository package version 153.6.0.
 The test reads the effective policy through a local automation connection in a disposable container.
 Both versions accept every configured policy.
-The assessed privacy preferences remain disabled and locked, and the studies feature remains blocked.
+The assessed privacy preferences remain disabled and locked.
+The policies also block Firefox studies.
 Malware and phishing protection remain enabled.
 
 Both final desktop Kickstart files pass the disposable installation script test.
@@ -395,7 +402,7 @@ The test retains enforcement and changes the deployment endpoint to the standard
 The upload service then reports an active state.
 The retained audit record identifies the denied port and domain.
 
-With the virtual network link disconnected, the corrected system reaches its graphical target in 8.045 seconds of userspace time.
+With the virtual network link disconnected, the system reaches its graphical target in 8.045 seconds of userspace time.
 The NetworkManager wait returns status 1, which the bounded wait configuration accepts without a failed unit.
 The journal upload service retries through its vendor unit and retains its security directives.
 SELinux remains enforcing, and the offline system reports zero failed units.
@@ -404,7 +411,7 @@ This test measures one virtual machine and does not establish physical laptop st
 The X1 Carbon Gen 13 review uses Lenovo specifications, Lenovo Linux support records, and Red Hat hardware records.
 The DVD contains the reviewed Intel graphics, wireless, Bluetooth, and audio modules and firmware.
 The image explicitly adds the missing PulseAudio-compatible service and ALSA UCM profiles.
-No physical X1 acceptance result is claimed.
+Physical X1 acceptance remains pending in this record.
 See [Lenovo X1 Carbon Gen 13](lenovo-x1.md) for device-specific limits and tests.
 
 The test records reside under `build/dvd-policy/`.
@@ -413,6 +420,7 @@ The source reports use the `.dvd-packages.json` suffix.
 The original DVD assessment resides in `vm-laptop-final/collected-dvd-original/evidence/`.
 The updated assessment resides in `vm-laptop-final/collected-updated/evidence/`.
 The offline boot record is `vm-laptop-final/console-offline.log`.
+
 The regenerated inventory matches the committed inventory byte for byte.
 
 The temporary log receiver stops after these tests.
@@ -447,14 +455,15 @@ See [Laptop package and firmware sources](package-sources.md#laptop-package-and-
 
 The November 9 render uses the configured name in Inter Bold for the boot image, wallpaper, and transparent login banner.
 The boot ring and disk prompt text use the same light color as the name.
-The startup screen uses the name and ring as its normal display.
+The startup screen normally shows the name and ring.
 
 All 60 local tests pass.
 The production laptop Kickstart resolves 624 packages from the locked DVD without network access.
 The generated images reside in `build/wordmark-x1/branding/`.
 
 An offline QEMU overlay of the laptop test disk shows the new prompt, rotating ring, and login banner.
-The disk prompt masks typed characters, and Esc switches to the text view.
+The disk prompt masks typed characters.
+Esc switches to the text view.
 The visual records reside in `build/wordmark-review/vm/`.
 
 ## Desktop security updates

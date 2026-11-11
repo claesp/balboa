@@ -1,7 +1,8 @@
 # Interactive QEMU tests
 
 To remove an obsolete VM directory, use the selected-path procedure in [Clean generated files](clean.md).
-The clean command shows its paths before removal and requires `--apply` to erase them.
+The clean command shows the selected paths before removal.
+It requires `--apply` to remove them.
 
 The script `scripts/start-qemu.py` starts an ISO in a QEMU window.
 An ISO is a file that contains installation media.
@@ -14,9 +15,10 @@ See [Build and installation](build.md) for the image build procedure.
 
 ## Start the laptop ISO
 
-Operate this command from the repository root after the laptop ISO build.
-Replace the example ISO path with the image that you want to install.
-Use a new VM directory for each installation.
+1. Replace the example ISO path with the path to the image that you want to install.
+2. Select a new VM directory for each installation.
+3. After the laptop ISO build, operate the command from the repository root.
+
 The `--workdir` parameter selects the directory for the virtual disk and saved VM state.
 Its default is `build/qemu-laptop` under the repository root, regardless of the current working directory.
 
@@ -29,9 +31,8 @@ KVM uses host hardware to accelerate the virtual machine.
 If the host account can access `/dev/kvm`, the script selects KVM.
 Otherwise, it selects CPU emulation with the QEMU `max` model.
 
-The script reads the JSON manifest beside a Balboa ISO.
+The script reads the disk size and device name from the JSON manifest beside a Balboa ISO.
 If you copy an ISO, copy its matching JSON manifest beside it.
-It uses the manifest disk size and device name.
 The script supports `vda`, `sda`, and `nvme0n1` as installation disk names.
 The startup summary shows the guest disk name, capacity, and firmware.
 
@@ -41,11 +42,13 @@ The virtual disk file consumes host storage as the guest writes data.
 
 The script refuses installation into a directory that contains files.
 The error shows the full path of that directory.
-Use `--boot` to reuse its virtual disk, or select a new directory for another installation.
-Remove the old directory only if you no longer require its virtual disk and saved state.
-Removal erases the VM data in that directory.
-It attaches a virtual disk and the selected ISO.
-It exposes no inbound host port or shared host directory.
+To reuse the virtual disk, use `--boot`.
+For another installation, select a new directory.
+If you no longer need the virtual disk or saved state, remove the old directory.
+The command removes the VM data in that directory.
+
+The launcher attaches a virtual disk and the selected ISO.
+The launcher exposes no inbound host port or shared host directory.
 
 Use the QEMU window for the installer and GNOME desktop.
 Use the terminal for serial prompts from lab media.
@@ -55,7 +58,7 @@ This supplies the installation key and still requires disk unlock at boot.
 
 ## Boot the installed disk
 
-After the installer stops, operate this command from the repository root:
+After the installer stops, operate the following command from the repository root.
 
 ```sh
 ./scripts/start-qemu.py --boot --workdir build/qemu-laptop
@@ -70,7 +73,7 @@ QEMU continues through that restart.
 Enter the encryption passphrase again when the guest prompts.
 
 Production logging values require the procedure in [Site configuration](site.md).
-For a lab ISO with local logging credentials, start its matching receiver before the installed boot:
+For a lab ISO with local logging credentials, start its matching receiver before you boot the installed system.
 
 ```sh
 python3 -m balboa lab-logger --directory build/lab-logging
@@ -90,15 +93,16 @@ Virtual machines do not test physical wireless, Bluetooth, suspend, or docking b
 ## Change the VM configuration
 
 Use BIOS if OVMF is unavailable on the host.
-Select the firmware when you create the VM:
+Select the firmware when you create the VM.
 
 ```sh
 ./scripts/start-qemu.py --iso build/balboa-laptop-dvd.iso --workdir build/qemu-laptop-bios --firmware bios
 ```
 
-For a smaller disk, first render and build an image with the smaller fixed layout.
+For a smaller disk, render a Kickstart with the smaller fixed layout.
+Build an image from that Kickstart.
 The script refuses a disk smaller than the image manifest requires.
-The following example requires a laptop lab ISO with a 32 GB layout:
+The following example requires a laptop lab ISO with a 32 GB layout.
 
 ```sh
 ./scripts/start-qemu.py --iso build/balboa-laptop-lab.iso --workdir build/qemu-laptop-lab --disk-size-gb 32
@@ -106,9 +110,10 @@ The following example requires a laptop lab ISO with a 32 GB layout:
 
 Use `--memory-mib` and `--cpus` to change memory and CPU allocation.
 Use `--accel tcg` to select CPU emulation explicitly.
-Use `--display sdl` for an SDL window or `--display none` for terminal access only.
+For an SDL window, use `--display sdl`.
+For terminal access only, use `--display none`.
 
-If automatic firmware discovery fails, supply both host firmware paths:
+If automatic firmware discovery fails, supply both host firmware paths.
 
 ```sh
 ./scripts/start-qemu.py --iso build/balboa-laptop-dvd.iso --workdir build/qemu-laptop-custom --ovmf-code /path/to/OVMF_CODE.fd --ovmf-vars /path/to/OVMF_VARS.fd
@@ -116,4 +121,4 @@ If automatic firmware discovery fails, supply both host firmware paths:
 
 Operate `./scripts/start-qemu.py --help` for all script parameters.
 The default UEFI procedure does not enable Secure Boot.
-The [QEMU command reference](https://www.qemu.org/docs/master/system/invocation.html) describes the underlying device and display parameters.
+QEMU documents the device parameters and the `-display` parameter. [QEMU command reference](https://www.qemu.org/docs/master/system/invocation.html)
